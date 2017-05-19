@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "event.h"
 #include "log.h"
@@ -65,7 +66,7 @@ static bool strip_nl(char *s)
 	int len = strlen(s);
 
 	if (len && s[len - 1] == '\n') {
-		s[len - 2] = '\0';
+		s[len - 1] = '\0';
 		return true;
 	}
 	return false;
