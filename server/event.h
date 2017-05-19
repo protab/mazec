@@ -11,4 +11,7 @@ int event_del_fd(int fd);
 int event_enable_fd(int fd, bool enable);
 void event_loop(void);
 
+int timer_new(event_callback_t cb, void *cb_data);
+int timer_arm(int fd, int milisecs);
+
 #endif

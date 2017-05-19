@@ -2,10 +2,12 @@
 #include "event.h"
 #include <errno.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/signalfd.h>
+#include <sys/timerfd.h>
 #include <unistd.h>
 
 typedef void (*event_callback_t)(int fd, void *data);
@@ -147,4 +149,32 @@ void event_loop(void)
 			fdd->cb(fdd->fd, fdd->cb_data);
 		}
 	}
+}
+
+int timer_new(event_callback_t cb, void *cb_data)
+{
+	int fd;
+	int ret;
+
+	fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+	if (fd < 0)
+		return -errno;
+	ret = event_add_fd(fd, false, cb, cb_data);
+	if (ret < 0) {
+		close(fd);
+		return ret;
+	}
+	return fd;
+}
+
+/* pass 0 in milisecs to disarm */
+int timer_arm(int fd, int milisecs)
+{
+	struct itimerspec its;
+
+	memset(&its, 0, sizeof(its));
+	its.it_value.tv_nsec = (long)milisecs * 1000;
+	if (timerfd_settime(fd, 0, &its, NULL) < 0)
+		return -errno;
+	return 0;
 }
