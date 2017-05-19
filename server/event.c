@@ -9,6 +9,7 @@
 #include <sys/signalfd.h>
 #include <sys/timerfd.h>
 #include <unistd.h>
+#include "db.h"
 #include "log.h"
 
 struct fd_data {
@@ -53,6 +54,7 @@ static int sig_handler(int fd, void __unused *data)
 					log_info("child %ld was killed with signal %d", pid, WTERMSIG(status));
 				else
 					log_info("child %ld weirdly exited (%d)", pid, status);
+				db_kill_pid(pid);
 			}
 			break;
 		}
