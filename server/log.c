@@ -20,20 +20,35 @@ int log_init(const char *name)
 		return -errno;
 }
 
+#define MAX_LOG	1024
+
 int log(int level, const char *format, ...)
 {
 	va_list ap;
 	time_t t;
-	char buf[32];
+	char buf[MAX_LOG];
+	int pos;
 
 	if (level < 0 || level >= __LOG_LEVEL_MAX)
 		level = 0;
 	t = time(NULL);
-	if (strftime(buf, sizeof(buf), "%F %T", localtime(&t)) == 0)
-		buf[0] = 0;
-	fprintf(stderr, "%s %s [%s:%ld]", buf, level_desc[level], domain, pid);
+	pos = strftime(buf, sizeof(buf), "%F %T", localtime(&t));
+
+	pos += snprintf(buf + pos, MAX_LOG - pos,
+			" %s [%s:%ld]", buf, level_desc[level], domain, pid);
+	if (pos >= MAX_LOG)
+		pos = MAX_LOG - 1;
+
 	va_start(ap, format);
-	vfprintf(stderr, format, ap);
+	pos += vsnprintf(buf + pos, MAX_LOG - pos, format, ap);
+	if (pos >= MAX_LOG)
+		pos = MAX_LOG - 1;
 	va_end(ap);
-	fprintf(stderr, "\n");
+
+	if (pos == MAX_LOG - 1)
+		pos--;
+	buf[pos++] = '\n';
+	buf[pos++] = '\0';
+	write(2, buf, pos);
+	/* Don't care about incomplete writes. */
 }
