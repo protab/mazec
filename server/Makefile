@@ -1,9 +1,9 @@
-CFLAGS = -W -Wall -Wno-unused-result -O3 -std=gnu99
+CFLAGS = -W -Wall -Wno-unused-result -g -std=gnu99
 LDFLAGS = 
 
 OBJS = common.o db.o event.o log.o main.o spawn.o
 
-maze:	$(OBJS)
+mazec:	$(OBJS)
 	gcc $(LDFLAGS) -o $@ $+
 
 main.o: main.c
@@ -13,4 +13,4 @@ main.o: main.c
 	gcc $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(OBJS) maze
+	rm -f $(OBJS) mazec
