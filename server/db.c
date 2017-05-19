@@ -133,7 +133,21 @@ int db_reload(void)
 	return 0;
 }
 
-void db_kill_pid(pid_t pid)
+void db_start_process(const char *login, pid_t pid, int pipefd)
+{
+	struct user *u;
+
+	u = find_login(users, pid);
+	if (!u) {
+		log_err("unknown login '%s' reported as started", login);
+		return;
+	}
+	u->pid = pid;
+	u->pipefd = pipefd;
+	log_info("child %s:%d started", login, pid);
+}
+
+void db_end_process(pid_t pid)
 {
 	struct user *u;
 
@@ -146,7 +160,7 @@ void db_kill_pid(pid_t pid)
 	}
 	u->pid = 0;
 	u->pipefd = -1;
-	log_info("child %s:%d terminated");
+	log_info("child %s:%d terminated", u->login, pid);
 }
 
 /* Returns fd or -ENOENT if user process is not running or -EINVAL if unkown
