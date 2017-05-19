@@ -26,5 +26,6 @@ int main(int argc, char **argv)
 		init_master(argc, argv);
 	log_info("started");
 	check(event_loop());
+	log_info("terminating cleanly");
 	return 0;
 }

@@ -46,6 +46,9 @@ static int sig_handler(int fd, void __unused *data)
 		case SIGTERM:
 			ret = -EQUIT;
 			break;
+		case SIGHUP:
+			db_reload();
+			break;
 		case SIGCHLD: ;
 			int status;
 			pid_t pid;
@@ -82,6 +85,7 @@ int event_init(void)
 	sigaddset(&sigs, SIGCHLD);
 	sigaddset(&sigs, SIGINT);
 	sigaddset(&sigs, SIGTERM);
+	sigaddset(&sigs, SIGHUP);
 	sigaddset(&sigs, SIGUSR1);
 	sigaddset(&sigs, SIGUSR2);
 	if (sigprocmask(SIG_SETMASK, &sigs, NULL) < 0)
