@@ -18,6 +18,7 @@ struct fd_data {
 	bool enabled;
 	event_callback_t cb;
 	void *cb_data;
+	cb_data_destructor_t cb_destructor;
 	struct fd_data *next;
 };
 
@@ -28,6 +29,8 @@ static int sigfd;
 static struct fd_data *fdd_hash[FDD_HASH_SIZE];
 
 #define hash(v)		((v) % FDD_HASH_SIZE)
+
+static struct fd_data *deleted = NULL;
 
 static int sig_handler(int fd, void __unused *data)
 {
@@ -81,11 +84,12 @@ int event_init(void)
 	if (sigprocmask(SIG_SETMASK, &sigs, NULL) < 0)
 		return -errno;
 	sigfd = signalfd(-1, &sigs, SFD_NONBLOCK | SFD_CLOEXEC);
-	ret = event_add_fd(sigfd, false, sig_handler, NULL);
+	ret = event_add_fd(sigfd, false, sig_handler, NULL, NULL);
 	return ret;
 }
 
-int event_add_fd(int fd, bool poll_write, event_callback_t cb, void *cb_data)
+int event_add_fd(int fd, bool poll_write, event_callback_t cb, void *cb_data,
+		 cb_data_destructor_t cb_destructor);
 {
 	struct fd_data *fdd, **ptr;
 	struct epoll_event e;
@@ -98,6 +102,7 @@ int event_add_fd(int fd, bool poll_write, event_callback_t cb, void *cb_data)
 	fdd->enabled = true;
 	fdd->cb = cb;
 	fdd->cb_data = cb_data;
+	fdd->cb_destructor = cb_destructor;
 	fdd->next = NULL;
 
 	e.events = poll_write ? EPOLLOUT : EPOLLIN;
@@ -127,7 +132,8 @@ int event_del_fd(int fd)
 	fdd = *ptr;
 	if (fdd) {
 		*ptr = fdd->next;
-		free(fdd);
+		fdd->next = deleted;
+		deleted = fdd;
 	}
 	return ret;
 }
@@ -161,6 +167,18 @@ int event_enable_fd(int fd, bool enable)
 	return event_enable_fd_data(fdd, enable);
 }
 
+static void release_deleted(void)
+{
+	while (deleted) {
+		struct fd_data *next = deleted->next;
+
+		if (deleted->cb_destructor)
+			deleted->cb_destructor(deleted->cb_data);
+		free(deleted);
+		deleted = next;
+	}
+}
+
 #define EVENTS_MAX	64
 
 int event_loop(void)
@@ -170,10 +188,12 @@ int event_loop(void)
 	int ret = 0;
 
 	while (ret >= 0) {
+		release_deleted();
 		cnt = epoll_wait(epfd, evbuf, EVENTS_MAX, -1);
 		if (cnt < 0) {
 			if (errno = EINTR)
 				continue;
+			ret = -errno;
 			break;
 		}
 		for (int i = 0; i < cnt; i++) {
@@ -189,7 +209,8 @@ int event_loop(void)
 	return ret;
 }
 
-int timer_new(event_callback_t cb, void *cb_data)
+int timer_new(event_callback_t cb, void *cb_data,
+	      cb_data_destructor_t cb_destructor);
 {
 	int fd;
 	int ret;
@@ -197,7 +218,7 @@ int timer_new(event_callback_t cb, void *cb_data)
 	fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 	if (fd < 0)
 		return -errno;
-	ret = event_add_fd(fd, false, cb, cb_data);
+	ret = event_add_fd(fd, false, cb, cb_data, cb_destructor);
 	if (ret < 0) {
 		close(fd);
 		return ret;
