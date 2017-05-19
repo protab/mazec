@@ -38,7 +38,7 @@ int log_msg(int level, const char *format, ...)
 	pos = strftime(buf, sizeof(buf), "%F %T", localtime(&t));
 
 	pos += snprintf(buf + pos, MAX_LOG - pos,
-			" %s [%s:%d]", level_desc[level], domain, pid);
+			" %s [%s:%d] ", level_desc[level], domain, pid);
 	if (pos >= MAX_LOG)
 		pos = MAX_LOG - 1;
 
