@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "event.h"
 #include "log.h"
 
 #define LOGIN_LEN	30
@@ -144,6 +145,7 @@ void db_start_process(const char *login, pid_t pid, int pipefd)
 	}
 	u->pid = pid;
 	u->pipefd = pipefd;
+	event_add_fd(pipefd, false, log_remote, NULL, NULL);
 	log_info("child %s:%d started", login, pid);
 }
 
@@ -158,6 +160,7 @@ void db_end_process(pid_t pid)
 		log_err("unknown pid %ld reported as killed", pid);
 		return;
 	}
+	event_del_fd(u->pipefd);
 	u->pid = 0;
 	u->pipefd = -1;
 	log_info("child %s:%d terminated", u->login, pid);

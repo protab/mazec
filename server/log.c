@@ -52,3 +52,24 @@ int log(int level, const char *format, ...)
 	write(2, buf, pos);
 	/* Don't care about incomplete writes. */
 }
+
+int log_remote(int fd, void *unused __unused)
+{
+	char buf[MAX_LOG];
+	ssize_t size;
+	bool need_nl = false;
+
+	while (true) {
+		size = read(fd, buf, MAX_LOG);
+		if (size <= 0)
+			break;
+		need_nl = buf[size - 1] != '\n';
+		write(2, buf, size);
+	}
+	if (need_nl) {
+		char x = '\n';
+
+		write(2, &x, 1);
+	}
+	return 0;
+}
