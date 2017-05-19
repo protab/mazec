@@ -10,8 +10,6 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 
-typedef void (*event_callback_t)(int fd, void *data);
-
 struct fd_data {
 	int fd;
 	bool poll_write;
@@ -29,15 +27,36 @@ static struct fd_data *fdd_hash[FDD_HASH_SIZE];
 
 #define hash(v)		((v) % FDD_HASH_SIZE)
 
-static void sig_handler(int fd, void __unused *data)
+static int sig_handler(int fd, void __unused *data)
 {
 	struct signalfd_siginfo ssi;
+	int ret = 0;
 
 	while (read(fd, &ssi, sizeof(ssi)) > 0) {
-		// ssi->ssi_signo
-		// ssi->ssi_pid
-		// ssi->ssi_status
+		switch (ssi->signo) {
+		SIGINT:
+		SIGTERM:
+			ret = -EQUIT;
+			break;
+		SIGCHLD:
+			int status;
+			pid_t pid;
+
+			while (true) {
+				pid = waitpid(-1, &status, WNOHANG);
+				if (pid <= 0)
+					break;
+				if (WIFEXITED(status))
+					log("child %ld exited with status %d", pid, WEXITSTATUS(status));
+				else if (WIFSIGNALED(status))
+					log("child %ld was killed with signal %d", pid, WTERMSIG(status));
+				else
+					log("child %ld weirdly exited (%d)", pid, status);
+			}
+			break;
+		}
 	}
+	return ret;
 }
 
 int event_init(void)
@@ -52,6 +71,10 @@ int event_init(void)
 		return -errno;
 	sigemptyset(&sigs);
 	sigaddset(&sigs, SIGCHLD);
+	sigaddset(&sigs, SIGINT);
+	sigaddset(&sigs, SIGTERM);
+	sigaddset(&sigs, SIGUSR1);
+	sigaddset(&sigs, SIGUSR2);
 	if (sigprocmask(SIG_SETMASK, &sigs, NULL) < 0)
 		return -errno;
 	sigfd = signalfd(-1, &sigs, SFD_NONBLOCK | SFD_CLOEXEC);
@@ -106,16 +129,11 @@ int event_del_fd(int fd)
 	return ret;
 }
 
-int event_enable_fd(int fd, bool enable)
+static int event_enable_fd_data(struct fd_data fdd, bool enable)
 {
-	struct fd_data *fdd;
 	struct epoll_event e;
 	int op;
 
-	for (fdd = fdd_hash[hash(fd)]; fdd && fdd->fd != fd; fdd = fdd->next)
-		;
-	if (!fdd)
-		return -ENOENT;
 	if (fdd->enabled == enable)
 		return 0;
 
@@ -129,14 +147,26 @@ int event_enable_fd(int fd, bool enable)
 	return 0;
 }
 
+int event_enable_fd(int fd, bool enable)
+{
+	struct fd_data *fdd;
+
+	for (fdd = fdd_hash[hash(fd)]; fdd && fdd->fd != fd; fdd = fdd->next)
+		;
+	if (!fdd)
+		return -ENOENT;
+	return event_enable_fd_data(fdd, enable);
+}
+
 #define EVENTS_MAX	64
 
-void event_loop(void)
+int event_loop(void)
 {
 	struct epoll_event evbuf[EVENTS_MAX];
 	int cnt;
+	int ret = 0;
 
-	while (true) {
+	while (ret >= 0) {
 		cnt = epoll_wait(epfd, evbuf, EVENTS_MAX, -1);
 		if (cnt < 0) {
 			if (errno = EINTR)
@@ -146,9 +176,14 @@ void event_loop(void)
 		for (int i = 0; i < cnt; i++) {
 			struct fd_data *fdd = evbuf[i].data.ptr;
 
-			fdd->cb(fdd->fd, fdd->cb_data);
+			ret = fdd->cb(fdd->fd, fdd->cb_data);
+			if (ret > 0)
+				event_enable_fd_data(fdd, false);
+			else if (ret < 0)
+				break;
 		}
 	}
+	return ret;
 }
 
 int timer_new(event_callback_t cb, void *cb_data)
