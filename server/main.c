@@ -2,6 +2,7 @@
 #include "db.h"
 #include "event.h"
 #include "log.h"
+#include "spawn.h"
 
 static void init_master(int argc, char **argv)
 {
@@ -11,7 +12,7 @@ static void init_master(int argc, char **argv)
 	check(db_reload());
 }
 
-static void init_child(int argc, char **argv)
+static void init_child(int argc __unused, char **argv)
 {
 	check(event_init());
 	check(log_init(argv[1]));
@@ -19,8 +20,6 @@ static void init_child(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	int ret;
-
 	if (argc > 1)
 		init_child(argc, argv);
 	else

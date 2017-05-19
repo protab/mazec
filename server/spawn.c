@@ -11,7 +11,7 @@
 
 static char *prg_path;
 
-void spawn_init(int __unused argc, char **argv)
+int spawn_init(int __unused argc, char **argv)
 {
 	prg_path = strdup(argv[0]);
 	if (!prg_path)
@@ -46,7 +46,7 @@ int spawn(const char *login)
 	execlp(prg_path, login, NULL);
 	exit(11);
 
-error:
+error: ;
 	int ret = -errno;
 
 	close(fd[0]);

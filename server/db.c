@@ -21,10 +21,12 @@ static struct user *inactive = NULL;
 static struct user **get_last_ptr(struct user **list, int *count)
 {
 	struct user **ptr;
+	int c = 0;
 
 	for (ptr = list; *ptr; ptr = &(*ptr)->next)
-		if (count)
-			(*count)++;
+		c++;
+	if (count)
+		*count = c;
 	return ptr;
 }
 
@@ -112,7 +114,7 @@ int db_reload(void)
 				}
 				strcpy(u->login, login);
 				u->pid = 0;
-				u->pipe_fd = -1;
+				u->pipefd = -1;
 				u->next = NULL;
 				*last = u;
 				last = &u->next;
@@ -138,7 +140,7 @@ void db_start_process(const char *login, pid_t pid, int pipefd)
 {
 	struct user *u;
 
-	u = find_login(users, pid);
+	u = find_login(users, login);
 	if (!u) {
 		log_err("unknown login '%s' reported as started", login);
 		return;
@@ -157,7 +159,7 @@ void db_end_process(pid_t pid)
 	if (!u)
 		u = find_pid(inactive, pid);
 	if (!u) {
-		log_err("unknown pid %ld reported as killed", pid);
+		log_err("unknown pid %d reported as killed", pid);
 		return;
 	}
 	event_del_fd(u->pipefd);
@@ -172,7 +174,7 @@ int db_get_pipe(const char *login)
 {
 	struct user *u;
 
-	u = find_login(users, pid);
+	u = find_login(users, login);
 	if (!u)
 		return -EINVAL;
 	if (u->pipefd < 0)

@@ -8,6 +8,9 @@
 #include <sys/epoll.h>
 #include <sys/signalfd.h>
 #include <sys/timerfd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 #include "db.h"
 #include "log.h"
@@ -38,12 +41,12 @@ static int sig_handler(int fd, void __unused *data)
 	int ret = 0;
 
 	while (read(fd, &ssi, sizeof(ssi)) > 0) {
-		switch (ssi->signo) {
-		SIGINT:
-		SIGTERM:
+		switch (ssi.ssi_signo) {
+		case SIGINT:
+		case SIGTERM:
 			ret = -EQUIT;
 			break;
-		SIGCHLD:
+		case SIGCHLD: ;
 			int status;
 			pid_t pid;
 
@@ -52,11 +55,11 @@ static int sig_handler(int fd, void __unused *data)
 				if (pid <= 0)
 					break;
 				if (WIFEXITED(status))
-					log_info("child %ld exited with status %d", pid, WEXITSTATUS(status));
+					log_info("child %d exited with status %d", pid, WEXITSTATUS(status));
 				else if (WIFSIGNALED(status))
-					log_info("child %ld was killed with signal %d", pid, WTERMSIG(status));
+					log_info("child %d was killed with signal %d", pid, WTERMSIG(status));
 				else
-					log_info("child %ld weirdly exited (%d)", pid, status);
+					log_info("child %d weirdly exited (%d)", pid, status);
 				db_end_process(pid);
 			}
 			break;
@@ -70,7 +73,7 @@ int event_init(void)
 	sigset_t sigs;
 	int ret;
 
-	memset(fdd_hash, sizeof(fdd_hash), 0);
+	memset(fdd_hash, 0, sizeof(fdd_hash));
 
 	epfd = epoll_create1(EPOLL_CLOEXEC);
 	if (epfd < 0)
@@ -89,7 +92,7 @@ int event_init(void)
 }
 
 int event_add_fd(int fd, bool poll_write, event_callback_t cb, void *cb_data,
-		 cb_data_destructor_t cb_destructor);
+		 cb_data_destructor_t cb_destructor)
 {
 	struct fd_data *fdd, **ptr;
 	struct epoll_event e;
@@ -124,7 +127,7 @@ int event_del_fd(int fd)
 	struct fd_data *fdd, **ptr;
 	int ret = 0;
 
-	if (epoll_ctl(epdf, EPOLL_CTL_DEL, fd, NULL) < 0)
+	if (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) < 0)
 		ret = -errno;
 
 	for (ptr = &fdd_hash[hash(fd)]; *ptr && (*ptr)->fd != fd; ptr = &(*ptr)->next)
@@ -138,7 +141,7 @@ int event_del_fd(int fd)
 	return ret;
 }
 
-static int event_enable_fd_data(struct fd_data fdd, bool enable)
+static int event_enable_fd_data(struct fd_data *fdd, bool enable)
 {
 	struct epoll_event e;
 	int op;
@@ -150,7 +153,7 @@ static int event_enable_fd_data(struct fd_data fdd, bool enable)
 	e.data.ptr = fdd;
 	op = enable ? EPOLL_CTL_ADD : EPOLL_CTL_DEL;
 
-	if (epoll_ctl(epfd, op, fd, &e) < 0)
+	if (epoll_ctl(epfd, op, fdd->fd, &e) < 0)
 		return -errno;
 	fdd->enabled = enable;
 	return 0;
@@ -191,7 +194,7 @@ int event_loop(void)
 		release_deleted();
 		cnt = epoll_wait(epfd, evbuf, EVENTS_MAX, -1);
 		if (cnt < 0) {
-			if (errno = EINTR)
+			if (errno == EINTR)
 				continue;
 			ret = -errno;
 			break;
@@ -212,7 +215,7 @@ int event_loop(void)
 }
 
 int timer_new(event_callback_t cb, void *cb_data,
-	      cb_data_destructor_t cb_destructor);
+	      cb_data_destructor_t cb_destructor)
 {
 	int fd;
 	int ret;
