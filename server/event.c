@@ -9,6 +9,7 @@
 #include <sys/signalfd.h>
 #include <sys/timerfd.h>
 #include <unistd.h>
+#include "log.h"
 
 struct fd_data {
 	int fd;
