@@ -43,7 +43,7 @@ int spawn(const char *login)
 	if (dup2(fd[1], 2) < 0)
 		exit(10);
 	close(fd[1]);
-	execlp(prg_path, login, NULL);
+	execlp(prg_path, prg_path, login, NULL);
 	exit(11);
 
 error: ;
