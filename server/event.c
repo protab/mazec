@@ -48,11 +48,11 @@ static int sig_handler(int fd, void __unused *data)
 				if (pid <= 0)
 					break;
 				if (WIFEXITED(status))
-					log("child %ld exited with status %d", pid, WEXITSTATUS(status));
+					log_info("child %ld exited with status %d", pid, WEXITSTATUS(status));
 				else if (WIFSIGNALED(status))
-					log("child %ld was killed with signal %d", pid, WTERMSIG(status));
+					log_info("child %ld was killed with signal %d", pid, WTERMSIG(status));
 				else
-					log("child %ld weirdly exited (%d)", pid, status);
+					log_info("child %ld weirdly exited (%d)", pid, status);
 			}
 			break;
 		}
