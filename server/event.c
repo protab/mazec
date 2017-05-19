@@ -206,6 +206,8 @@ int event_loop(void)
 				break;
 		}
 	}
+	if (ret == -EQUIT)
+		return 0;
 	return ret;
 }
 

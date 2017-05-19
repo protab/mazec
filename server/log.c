@@ -10,7 +10,7 @@
 const char *level_desc[__LOG_LEVEL_MAX] = { "INFO", "WARN", "ERR!" };
 
 static pid_t pid;
-static char *domain;
+static char *domain = NULL;
 
 int log_init(const char *name)
 {
