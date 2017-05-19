@@ -51,7 +51,6 @@ int log_msg(int level, const char *format, ...)
 	if (pos == MAX_LOG - 1)
 		pos--;
 	buf[pos++] = '\n';
-	buf[pos++] = '\0';
 	write(2, buf, pos);
 	/* Don't care about incomplete writes. */
 	return 0;
