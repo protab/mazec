@@ -1,4 +1,4 @@
-#include "websocket.h"
+#include "websocket_http.h"
 #include <errno.h>
 #include <string.h>
 #include "base64.h"
@@ -394,9 +394,7 @@ static void ws_free(void *data)
 	free(wsd);
 }
 
-int websocket_init(unsigned port)
+int websocket_http_init(unsigned port)
 {
-	if (port)
-		return socket_listen(port, ws_new, ws_header_read, ws_free);
-	return 0;
+	return socket_listen(port, ws_new, ws_header_read, ws_free);
 }
