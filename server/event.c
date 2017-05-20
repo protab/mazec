@@ -14,10 +14,11 @@
 #include <unistd.h>
 #include "db.h"
 #include "log.h"
+#include "spawn.h"
 
 struct fd_data {
 	int fd;
-	bool poll_write;
+	unsigned events;
 	bool enabled;
 	event_callback_t cb;
 	void *cb_data;
@@ -35,7 +36,7 @@ static struct fd_data *fdd_hash[FDD_HASH_SIZE];
 
 static struct fd_data *deleted = NULL;
 
-static int sig_handler(int fd, void __unused *data)
+static int sig_handler(int fd, unsigned events __unused, void *data __unused)
 {
 	struct signalfd_siginfo ssi;
 	int ret = 0;
@@ -91,11 +92,11 @@ int event_init(void)
 	if (sigprocmask(SIG_SETMASK, &sigs, NULL) < 0)
 		return -errno;
 	sigfd = signalfd(-1, &sigs, SFD_NONBLOCK | SFD_CLOEXEC);
-	ret = event_add_fd(sigfd, false, sig_handler, NULL, NULL);
+	ret = event_add_fd(sigfd, EV_READ, sig_handler, NULL, NULL);
 	return ret;
 }
 
-int event_add_fd(int fd, bool poll_write, event_callback_t cb, void *cb_data,
+int event_add_fd(int fd, unsigned events, event_callback_t cb, void *cb_data,
 		 cb_data_destructor_t cb_destructor)
 {
 	struct fd_data *fdd, **ptr;
@@ -105,14 +106,14 @@ int event_add_fd(int fd, bool poll_write, event_callback_t cb, void *cb_data,
 	if (!fdd)
 		return -ENOMEM;
 	fdd->fd = fd;
-	fdd->poll_write = poll_write;
+	fdd->events = events;
 	fdd->enabled = true;
 	fdd->cb = cb;
 	fdd->cb_data = cb_data;
 	fdd->cb_destructor = cb_destructor;
 	fdd->next = NULL;
 
-	e.events = poll_write ? EPOLLOUT : EPOLLIN;
+	e.events = events;
 	e.data.ptr = fdd;
 
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &e) < 0) {
@@ -145,21 +146,29 @@ int event_del_fd(int fd)
 	return ret;
 }
 
-static int event_enable_fd_data(struct fd_data *fdd, bool enable)
+static int event_change_fd_data(struct fd_data *fdd, int enable)
 {
 	struct epoll_event e;
 	int op;
 
-	if (fdd->enabled == enable)
-		return 0;
+	if (!fdd->enabled) {
+		if (enable > 0)
+			op = EPOLL_CTL_ADD;
+		else
+			return 0;
+	} else {
+		if (enable > 0)
+			return 0;
+		op = enable < 0 ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
+	}
 
-	e.events = fdd->poll_write ? EPOLLOUT : EPOLLIN;
+	e.events = fdd->events;
 	e.data.ptr = fdd;
-	op = enable ? EPOLL_CTL_ADD : EPOLL_CTL_DEL;
 
 	if (epoll_ctl(epfd, op, fdd->fd, &e) < 0)
 		return -errno;
-	fdd->enabled = enable;
+	if (enable >= 0)
+		fdd->enabled = enable;
 	return 0;
 }
 
@@ -171,7 +180,19 @@ int event_enable_fd(int fd, bool enable)
 		;
 	if (!fdd)
 		return -ENOENT;
-	return event_enable_fd_data(fdd, enable);
+	return event_change_fd_data(fdd, (int)enable);
+}
+
+int event_change_fd(int fd, unsigned events)
+{
+	struct fd_data *fdd;
+
+	for (fdd = fdd_hash[hash(fd)]; fdd && fdd->fd != fd; fdd = fdd->next)
+		;
+	if (!fdd)
+		return -ENOENT;
+	fdd->events = events;
+	return event_change_fd_data(fdd, -1);
 }
 
 static void release_deleted(void)
@@ -206,9 +227,9 @@ int event_loop(void)
 		for (int i = 0; i < cnt; i++) {
 			struct fd_data *fdd = evbuf[i].data.ptr;
 
-			ret = fdd->cb(fdd->fd, fdd->cb_data);
+			ret = fdd->cb(fdd->fd, evbuf[i].events, fdd->cb_data);
 			if (ret > 0)
-				event_enable_fd_data(fdd, false);
+				event_change_fd_data(fdd, 0);
 			else if (ret < 0)
 				break;
 		}
@@ -227,7 +248,7 @@ int timer_new(event_callback_t cb, void *cb_data,
 	fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 	if (fd < 0)
 		return -errno;
-	ret = event_add_fd(fd, false, cb, cb_data, cb_destructor);
+	ret = event_add_fd(fd, EV_READ, cb, cb_data, cb_destructor);
 	if (ret < 0) {
 		close(fd);
 		return ret;

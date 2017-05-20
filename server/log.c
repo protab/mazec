@@ -56,7 +56,7 @@ int log_msg(int level, const char *format, ...)
 	return 0;
 }
 
-int log_remote(int fd, void *unused __unused)
+int log_remote(int fd, unsigned unused1 __unused, void *unused2 __unused)
 {
 	char buf[MAX_LOG];
 	ssize_t size;

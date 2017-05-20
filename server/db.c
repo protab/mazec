@@ -148,7 +148,7 @@ void db_start_process(const char *login, pid_t pid, int pipefd)
 	}
 	u->pid = pid;
 	u->pipefd = pipefd;
-	event_add_fd(pipefd, false, log_remote, NULL, NULL);
+	event_add_fd(pipefd, EV_READ, log_remote, NULL, NULL);
 	log_info("child %s:%d started", login, pid);
 }
 
