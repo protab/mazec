@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include "common.h"
 #include "event.h"
@@ -15,6 +16,8 @@
 struct msg {
 	void *buf;
 	size_t size, start;
+	void *ancil_buf;
+	size_t ancil_size;
 	struct msg *next;
 };
 
@@ -164,7 +167,8 @@ size_t socket_read(struct socket *s, void *buf, size_t size)
 	return ret;
 }
 
-static int socket_queue_data(struct socket *s, void *buf, size_t size)
+static int socket_queue_data(struct socket *s, void *buf, size_t size,
+			     void *ancil_buf, size_t ancil_size)
 {
 	struct msg *m, **ptr;
 
@@ -174,6 +178,8 @@ static int socket_queue_data(struct socket *s, void *buf, size_t size)
 	m->buf = buf;
 	m->size = size;
 	m->start = 0;
+	m->ancil_buf = ancil_buf;
+	m->ancil_size = ancil_size;
 	m->next = NULL;
 
 	for (ptr = &s->wqueue; *ptr; ptr = &(*ptr)->next)
@@ -182,14 +188,18 @@ static int socket_queue_data(struct socket *s, void *buf, size_t size)
 	return 0;
 }
 
-int socket_write(struct socket *s, void *buf, size_t size, bool steal)
+int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
+		       void *ancil_buf, size_t ancil_size, bool ancil_steal)
 {
 	int ret;
 	void *copied;
+	void *ancil_copied;
 
 	if (s->dead) {
 		if (steal)
 			free(buf);
+		if (ancil_steal)
+			free(ancil_buf);
 		return 0;
 	}
 
@@ -205,24 +215,64 @@ int socket_write(struct socket *s, void *buf, size_t size, bool steal)
 			return -errno;
 		memcpy(copied, buf, size);
 	}
-	ret = socket_queue_data(s, copied, size);
-	if (ret < 0 && !steal)
-		free(copied);
+	if (!ancil_buf || ancil_steal) {
+		ancil_copied = ancil_buf;
+	} else {
+		ancil_copied = malloc(ancil_size);
+		if (!ancil_copied) {
+			ret = -errno;
+			goto error;
+		}
+		memcpy(ancil_copied, ancil_buf, ancil_size);
+	}
+
+	ret = socket_queue_data(s, copied, size, ancil_copied, ancil_size);
+	if (ret < 0)
+		goto error;
 	return ret;
+
+error:
+	if (!steal)
+		free(copied);
+	if (!ancil_steal && ancil_copied)
+		free(ancil_copied);
+	return ret;
+}
+
+int socket_write(struct socket *s, void *buf, size_t size, bool steal)
+{
+	return socket_write_ancil(s, buf, size, steal, NULL, 0, false);
 }
 
 static void socket_process_wqueue(struct socket *s)
 {
-	ssize_t written;
-
 	while (s->wqueue) {
 		struct msg *m = s->wqueue;
+		struct msghdr mh;
+		struct iovec iov;
+		ssize_t written;
 
-		written = write(s->fd, m->buf + m->start, m->size);
+		iov.iov_base = m->buf + m->start;
+		iov.iov_len = m->size;
+
+		mh.msg_name = NULL;
+		mh.msg_namelen = 0;
+		mh.msg_iov = &iov;
+		mh.msg_iovlen = 1;
+		mh.msg_control = m->ancil_buf;
+		mh.msg_controllen = m->ancil_size;
+		mh.msg_flags = 0;
+
+		written = sendmsg(s->fd, &mh, 0);
 		if (written < 0)
 			/* We might just get EAGAIN. Real errors are handled in
 			* socket_cb via EV_ERROR. */
 			return;
+		if (written > 0 && m->ancil_buf) {
+			free(m->ancil_buf);
+			m->ancil_buf = NULL;
+			m->ancil_size = 0;
+		}
 		if ((size_t)written == m->size) {
 			s->wqueue = m->next;
 			free(m->buf);

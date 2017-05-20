@@ -20,6 +20,8 @@ void socket_ref(struct socket *s);
 void socket_unref(struct socket *s);
 size_t socket_read(struct socket *s, void *buf, size_t size);
 int socket_write(struct socket *s, void *buf, size_t size, bool steal);
+int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
+		       void *ancil_buf, size_t ancil_size, bool ancil_steal);
 int socket_get_fd(struct socket *s);
 
 int socket_listen(unsigned port, socket_cb_new_t cb_new,
