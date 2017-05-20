@@ -19,7 +19,9 @@ struct msg {
 };
 
 struct socket {
+	int refs;
 	int fd;
+	bool dead;
 	bool should_close;
 	socket_cb_read_t cb_read;
 	socket_cb_read_t cb_write_done;
@@ -46,15 +48,12 @@ static int socket_cb(int fd, unsigned events, void *data)
 	return 0;
 }
 
-static void socket_destroy(void *data)
+static void socket_kill(void *data)
 {
 	struct socket *s = data;
 
-	if (s->cb_destructor)
-		s->cb_destructor(s->cb_data);
-	if (s->should_close)
-		close(s->fd);
-	free(s);
+	s->dead = true;
+	socket_unref(s);
 }
 
 /* Add the socket to the socket management core. The file descriptor is
@@ -68,13 +67,15 @@ struct socket *socket_add(int fd, socket_cb_read_t cb_read, void *cb_data,
 	s = malloc(sizeof(*s));
 	if (!s)
 		return NULL;
+	s->refs = 1;
 	s->fd = fd;
+	s->dead = false;
 	s->should_close = true;
 	s->cb_read = cb_read;
 	s->cb_write_done = NULL;
 	s->cb_data = cb_data;
 	s->cb_destructor = cb_destructor;
-	if (event_add_fd(fd, EV_SOCK | EV_READ, socket_cb, s, socket_destroy) < 0) {
+	if (event_add_fd(fd, EV_SOCK | EV_READ, socket_cb, s, socket_kill) < 0) {
 		free(s);
 		return NULL;
 	}
@@ -106,9 +107,17 @@ int socket_get_fd(struct socket *s)
 
 int socket_stop_reading(struct socket *s)
 {
+	if (s->dead)
+		return 0;
 	return event_change_fd_remove(s->fd, EV_READ);
 }
 
+/* May be called multiple times, may be called even when the socket is dead.
+ * However, must not be called on a socket that was freed (i.e. has zero
+ * reference count). It is safe to call socket_del from that socket's
+ * callbacks without taking a reference, as socket is freed only after all
+ * its callbacks are finished. It is NOT safe to call socket_del from other
+ * socket's callbacks without having a reference. */
 void socket_del(struct socket *s)
 {
 	event_del_fd(s->fd);
@@ -127,10 +136,28 @@ void socket_flush_and_del(struct socket *s)
 		socket_set_write_done_cb(s, socket_del_cb);
 }
 
+void socket_ref(struct socket *s)
+{
+	s->refs++;
+}
+
+void socket_unref(struct socket *s)
+{
+	if (--s->refs == 0) {
+		if (s->cb_destructor)
+			s->cb_destructor(s->cb_data);
+		if (s->should_close)
+			close(s->fd);
+		free(s);
+	}
+}
+
 size_t socket_read(struct socket *s, void *buf, size_t size)
 {
 	ssize_t ret;
 
+	if (s->dead)
+		return 0;
 	ret = read(s->fd, buf, size);
 	if (ret < 0)
 		ret = 0;
@@ -159,6 +186,12 @@ int socket_write(struct socket *s, void *buf, size_t size, bool steal)
 {
 	int ret;
 	void *copied;
+
+	if (s->dead) {
+		if (steal)
+			free(buf);
+		return 0;
+	}
 
 	ret = event_change_fd_add(s->fd, EV_WRITE);
 	if (ret < 0)
@@ -216,7 +249,7 @@ struct listen_data {
 	cb_data_destructor_t cb_destructor;
 };
 
-void socket_accept(struct socket *s, void *data)
+static void socket_accept(struct socket *s, void *data)
 {
 	struct listen_data *ldata = data;
 	struct sockaddr_in6 sin6;

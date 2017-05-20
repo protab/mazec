@@ -16,6 +16,8 @@ int socket_set_unmanaged(struct socket *s);
 int socket_stop_reading(struct socket *s);
 void socket_del(struct socket *s);
 void socket_flush_and_del(struct socket *s);
+void socket_ref(struct socket *s);
+void socket_unref(struct socket *s);
 size_t socket_read(struct socket *s, void *buf, size_t size);
 int socket_write(struct socket *s, void *buf, size_t size, bool steal);
 int socket_get_fd(struct socket *s);
