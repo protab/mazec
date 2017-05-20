@@ -102,7 +102,8 @@ int socket_set_unmanaged(struct socket *s)
 	return s->fd;
 }
 
-/* Use only for logging purposes. */
+/* Use carefully. Do not store the returned fd anywhere, do not perform I/O
+ * that could interfere with the socket management core operations. */
 int socket_get_fd(struct socket *s)
 {
 	return s->fd;

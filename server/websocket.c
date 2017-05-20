@@ -4,6 +4,7 @@
 #include "base64.h"
 #include "common.h"
 #include "db.h"
+#include "ipc.h"
 #include "log.h"
 #include "sha1.h"
 #include "socket.h"
@@ -284,12 +285,16 @@ static void ws_headers_sent(struct socket *s __unused, void *data)
 {
 	struct ws_data *wsd = data;
 	int fd;
+	struct socket *pipe;
 
-	fd = socket_set_unmanaged(wsd->s);
 	socket_del(wsd->s);
-	// FIXME: send fd to the appropriate child (spawning the child when
-	// needed)
-	close(fd);
+	pipe = db_get_pipe(wsd->path + 1);
+	fd = socket_get_fd(wsd->s);
+	if (!pipe || ipc_send_fd(pipe, fd, IPC_FD_WEBSOCKET) < 0)
+		log_warn("unable to send fd %d to child [%s]", fd, wsd->path + 1);
+	else
+		log_info("sending websocket fd %d to child [%s]", fd, wsd->path + 1);
+	return;
 }
 
 static char ws_response1[] =

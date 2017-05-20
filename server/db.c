@@ -8,6 +8,7 @@
 #include "event.h"
 #include "log.h"
 #include "socket.h"
+#include "spawn.h"
 
 #define LOGIN_LEN	30
 
@@ -198,5 +199,7 @@ struct socket *db_get_pipe(const char *login)
 	u = find_login(users, login);
 	if (!u)
 		return NULL;
+	if (!u->pipe)
+		spawn(login);
 	return u->pipe;
 }
