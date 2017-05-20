@@ -12,16 +12,16 @@
 #define BUF_SIZE	1024
 #define FIELD_MAX_SIZE	32
 
-struct ws_data;
-typedef int (*hdr_process_t)(struct ws_data *wsd);
+struct ws_http_data;
+typedef int (*hdr_process_t)(struct ws_http_data *wsd);
 
-/* ws_data->token_end meaning:
+/* ws_http_data->token_end meaning:
  *	' '  space
  *	'\t' one or more spaces or tabs
  *	':'  colon followed by any number of spaces or tabs
  *	'\n' LF or CRLF
  *	'N'  LF or CRLF, line continuation not allowed
- * ws_data->future meaning:
+ * ws_http_data->future meaning:
  *	'\t' skip any number of spaces or tabs
  *	'\n' expect mandatory LF
  *	'N'  expect mandatory LF, line continuation not allowed
@@ -29,7 +29,7 @@ typedef int (*hdr_process_t)(struct ws_data *wsd);
  *	'\\' start of line, allow optional continuation of previous line
  *	'_'  start of line, line continuation not allowed
  */
-struct ws_data {
+struct ws_http_data {
 	struct socket *s;
 	char token_end;
 	char future;
@@ -53,7 +53,7 @@ struct ws_data {
 /* Returns character to add to buffer, 0 for token end, 0x100 for token end and
  * not consume character, 0x200 for token end and end of headers, -1 to skip,
  * -2 to abort. */
-static int tokenizer(struct ws_data *wsd, char c)
+static int tokenizer(struct ws_http_data *wsd, char c)
 {
 	switch (wsd->future) {
 	case '\t':
@@ -145,7 +145,7 @@ static int tokenizer(struct ws_data *wsd, char c)
 	return c;
 }
 
-static int process_header_chunk(struct ws_data *wsd, char *buf, size_t count)
+static int process_header_chunk(struct ws_http_data *wsd, char *buf, size_t count)
 {
 	char *pos;
 
@@ -180,9 +180,9 @@ static int process_header_chunk(struct ws_data *wsd, char *buf, size_t count)
 	return 0;
 }
 
-static int process_field(struct ws_data *wsd);
+static int process_field(struct ws_http_data *wsd);
 
-static int process_value(struct ws_data *wsd)
+static int process_value(struct ws_http_data *wsd)
 {
 	rstrip(wsd->buf);
 	if (!strcasecmp(wsd->field, "upgrade")) {
@@ -209,7 +209,7 @@ static int process_value(struct ws_data *wsd)
 	return 0;
 }
 
-static int process_field(struct ws_data *wsd)
+static int process_field(struct ws_http_data *wsd)
 {
 	rstrip(wsd->buf);
 	strlcpy(wsd->field, wsd->buf, FIELD_MAX_SIZE);
@@ -218,7 +218,7 @@ static int process_field(struct ws_data *wsd)
 	return 0;
 }
 
-static int process_http_ver(struct ws_data *wsd)
+static int process_http_ver(struct ws_http_data *wsd)
 {
 	if (strcmp(wsd->buf, "HTTP/1.1"))
 		return -ENOPROTOOPT;
@@ -227,7 +227,7 @@ static int process_http_ver(struct ws_data *wsd)
 	return 0;
 }
 
-static int process_path(struct ws_data *wsd)
+static int process_path(struct ws_http_data *wsd)
 {
 	wsd->path = strdup(wsd->buf);
 	if (!wsd->path)
@@ -237,7 +237,7 @@ static int process_path(struct ws_data *wsd)
 	return 0;
 }
 
-static int process_method(struct ws_data *wsd)
+static int process_method(struct ws_http_data *wsd)
 {
 	if (strcmp(wsd->buf, "GET"))
 		return -ENOTBLK;
@@ -245,7 +245,7 @@ static int process_method(struct ws_data *wsd)
 	return 0;
 }
 
-static void ws_report_error(struct ws_data *wsd, int err)
+static void ws_report_error(struct ws_http_data *wsd, int err)
 {
 	char *msg;
 
@@ -283,7 +283,7 @@ static void ws_report_error(struct ws_data *wsd, int err)
 
 static void ws_headers_sent(struct socket *s __unused, void *data)
 {
-	struct ws_data *wsd = data;
+	struct ws_http_data *wsd = data;
 	int fd;
 	struct socket *pipe;
 
@@ -320,7 +320,7 @@ static char *construct_accept_key(char *key, size_t *out_len)
 	return (char *)base64_encode(sha_result, 20, out_len);
 }
 
-static int ws_headers_processed(struct ws_data *wsd)
+static int ws_headers_processed(struct ws_http_data *wsd)
 {
 	char *key;
 	size_t key_len;
@@ -347,7 +347,7 @@ static int ws_headers_processed(struct ws_data *wsd)
 
 static void ws_header_read(struct socket *s, void *data)
 {
-	struct ws_data *wsd = data;
+	struct ws_http_data *wsd = data;
 	char buf[BUF_SIZE];
 	size_t count;
 	int ret;
@@ -372,7 +372,7 @@ static void ws_header_read(struct socket *s, void *data)
 
 static void *ws_new(struct socket *s)
 {
-	struct ws_data *wsd;
+	struct ws_http_data *wsd;
 
 	wsd = calloc(1, sizeof(*wsd));
 	if (!wsd)
@@ -385,7 +385,7 @@ static void *ws_new(struct socket *s)
 
 static void ws_free(void *data)
 {
-	struct ws_data *wsd = data;
+	struct ws_http_data *wsd = data;
 
 	if (wsd->path)
 		free(wsd->path);
