@@ -19,6 +19,8 @@ void socket_flush_and_del(struct socket *s);
 void socket_ref(struct socket *s);
 void socket_unref(struct socket *s);
 size_t socket_read(struct socket *s, void *buf, size_t size);
+size_t socket_read_ancil(struct socket *s, void *buf, size_t size,
+			 void *ancil_buf, size_t *ancil_size);
 int socket_write(struct socket *s, void *buf, size_t size, bool steal);
 int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
 		       void *ancil_buf, size_t ancil_size, bool ancil_steal);

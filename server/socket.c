@@ -156,16 +156,44 @@ void socket_unref(struct socket *s)
 	}
 }
 
-size_t socket_read(struct socket *s, void *buf, size_t size)
+size_t socket_read_ancil(struct socket *s, void *buf, size_t size,
+			 void *ancil_buf, size_t *ancil_size)
 {
+	struct msghdr mh;
+	struct iovec iov;
 	ssize_t ret;
 
-	if (s->dead)
+	if (s->dead) {
+		*ancil_size = 0;
 		return 0;
-	ret = read(s->fd, buf, size);
-	if (ret < 0)
+	}
+
+	iov.iov_base = buf;
+	iov.iov_len = size;
+
+	mh.msg_name = NULL;
+	mh.msg_namelen = 0;
+	mh.msg_iov = &iov;
+	mh.msg_iovlen = 1;
+	mh.msg_control = ancil_buf;
+	mh.msg_controllen = *ancil_size;
+	mh.msg_flags = 0;
+
+	ret = recvmsg(s->fd, &mh, 0);
+	if (ret < 0) {
 		ret = 0;
+		*ancil_size = 0;
+	} else {
+		*ancil_size = mh.msg_controllen;
+	}
 	return ret;
+}
+
+size_t socket_read(struct socket *s, void *buf, size_t size)
+{
+	size_t ancil_size = 0;
+
+	return socket_read_ancil(s, buf, size, NULL, &ancil_size);
 }
 
 static int socket_queue_data(struct socket *s, void *buf, size_t size,
