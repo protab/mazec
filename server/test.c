@@ -31,11 +31,12 @@ void conn_read(struct socket *s, void *data)
 	while (true) {
 		count = socket_read(s, buf, 256);
 		if (!count)
-			return;
+			break;
 		buf[count] = '\0';
 		cd->num_bytes += count;
 		log_info("stream %d: %s", cd->stream, buf);
 	}
+	check(socket_write(s, "ack\n", 4, false));
 }
 
 int test_init_master(void)

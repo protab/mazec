@@ -136,6 +136,7 @@ int socket_write(struct socket *s, void *buf, size_t size, bool steal)
 		copied = malloc(size);
 		if (!copied)
 			return -errno;
+		memcpy(copied, buf, size);
 	}
 	ret = socket_queue_data(s, copied, size);
 	if (ret < 0 && !steal)
