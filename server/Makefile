@@ -1,7 +1,7 @@
-CFLAGS = -W -Wall -Wno-unused-result -g -std=gnu99
+CFLAGS = -W -Wall -Wno-unused-result -g -std=gnu99 -D_GNU_SOURCE
 LDFLAGS = 
 
-OBJS = common.o db.o event.o log.o main.o spawn.o
+OBJS = common.o db.o event.o log.o main.o socket.o spawn.o test.o
 
 mazec:	$(OBJS)
 	gcc $(LDFLAGS) -o $@ $+

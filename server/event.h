@@ -7,6 +7,9 @@
 
 #define EV_READ		EPOLLIN
 #define EV_WRITE	EPOLLOUT
+#define EV_SOCK_READ	(EPOLLIN | EPOLLRDHUP)
+#define EV_SOCK_WRITE	EPOLLOUT
+#define EV_ERROR	(EPOLLERR | EPOLLHUP | EPOLLRDHUP)
 
 /* Return values: 0 to keep, 1 to disable (but not remove!), 2 to terminate
  * the event loop. */

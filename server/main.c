@@ -3,6 +3,7 @@
 #include "event.h"
 #include "log.h"
 #include "spawn.h"
+#include "test.h"
 
 static void init_master(int argc, char **argv)
 {
@@ -10,6 +11,7 @@ static void init_master(int argc, char **argv)
 	check(log_init("<master>"));
 	check(spawn_init(argc, argv));
 	check(db_reload());
+	check(test_init_master());
 }
 
 static void init_child(int argc __unused, char **argv)
