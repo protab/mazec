@@ -56,23 +56,18 @@ int log_msg(int level, const char *format, ...)
 	return 0;
 }
 
-int log_remote(int fd, unsigned unused1 __unused, void *unused2 __unused)
+/* Needs to be terminated by calling with size == 0. */
+void log_raw(char *buf, size_t size)
 {
-	char buf[MAX_LOG];
-	ssize_t size;
-	bool need_nl = false;
+	static bool need_nl = false;
 
-	while (true) {
-		size = read(fd, buf, MAX_LOG);
-		if (size <= 0)
-			break;
-		need_nl = buf[size - 1] != '\n';
+	if (size) {
 		write(2, buf, size);
-	}
-	if (need_nl) {
+		need_nl = buf[size - 1] != '\n';
+	} else if (need_nl) {
 		char x = '\n';
 
 		write(2, &x, 1);
+		need_nl = false;
 	}
-	return 0;
 }

@@ -1,5 +1,7 @@
 #ifndef LOG_H
 #define LOG_H
+#include <stdbool.h>
+#include <stdlib.h>
 
 enum {
 	INFO,
@@ -10,7 +12,7 @@ enum {
 
 int log_init(const char *name);
 int log_msg(int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
-int log_remote(int fd, unsigned unused1, void *unused2);
+void log_raw(char *buf, size_t size);
 
 #define log_info(...)	log_msg(INFO, __VA_ARGS__)
 #define log_warn(...)	log_msg(WARNING, __VA_ARGS__)

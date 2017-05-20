@@ -4,15 +4,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "common.h"
 #include "event.h"
 #include "log.h"
+#include "socket.h"
 
 #define LOGIN_LEN	30
 
 struct user {
 	char login[LOGIN_LEN + 1];
 	pid_t pid;
-	int pipefd;
+	struct socket *pipe;
 	struct user *next;
 };
 
@@ -115,7 +117,7 @@ int db_reload(void)
 				}
 				strcpy(u->login, login);
 				u->pid = 0;
-				u->pipefd = -1;
+				u->pipe = NULL;
 				u->next = NULL;
 				*last = u;
 				last = &u->next;
@@ -137,6 +139,20 @@ int db_reload(void)
 	return 0;
 }
 
+#define BUF_SIZE 1024
+static void pipe_read(struct socket *s, void *data __unused)
+{
+	char buf[BUF_SIZE];
+	size_t len;
+
+	while (true) {
+		len = socket_read(s, buf, BUF_SIZE);
+		log_raw(buf, len);
+		if (!len)
+			break;
+	}
+}
+
 void db_start_process(const char *login, pid_t pid, int pipefd)
 {
 	struct user *u;
@@ -147,8 +163,7 @@ void db_start_process(const char *login, pid_t pid, int pipefd)
 		return;
 	}
 	u->pid = pid;
-	u->pipefd = pipefd;
-	event_add_fd(pipefd, EV_READ, log_remote, NULL, NULL);
+	u->pipe = socket_add(pipefd, pipe_read, NULL, NULL);
 	log_info("child %s:%d started", login, pid);
 }
 
@@ -163,9 +178,9 @@ void db_end_process(pid_t pid)
 		log_err("unknown pid %d reported as killed", pid);
 		return;
 	}
-	event_del_fd(u->pipefd);
+	socket_del(u->pipe);
 	u->pid = 0;
-	u->pipefd = -1;
+	u->pipe = NULL;
 	log_info("child %s:%d terminated", u->login, pid);
 }
 
@@ -174,16 +189,12 @@ bool db_user_exists(const char *login)
 	return !!find_login(users, login);
 }
 
-/* Returns fd or -ENOENT if user process is not running or -EINVAL if unkown
- * login. */
-int db_get_pipe(const char *login)
+struct socket *db_get_pipe(const char *login)
 {
 	struct user *u;
 
 	u = find_login(users, login);
 	if (!u)
-		return -EINVAL;
-	if (u->pipefd < 0)
-		return -ENOENT;
-	return u->pipefd;
+		return NULL;
+	return u->pipe;
 }
