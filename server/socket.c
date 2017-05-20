@@ -18,6 +18,7 @@ struct msg {
 	size_t size, start;
 	void *ancil_buf;
 	size_t ancil_size;
+	int fd_to_close;
 	struct msg *next;
 };
 
@@ -197,7 +198,8 @@ size_t socket_read(struct socket *s, void *buf, size_t size)
 }
 
 static int socket_queue_data(struct socket *s, void *buf, size_t size,
-			     void *ancil_buf, size_t ancil_size)
+			     void *ancil_buf, size_t ancil_size,
+			     int fd_to_close)
 {
 	struct msg *m, **ptr;
 
@@ -209,6 +211,7 @@ static int socket_queue_data(struct socket *s, void *buf, size_t size,
 	m->start = 0;
 	m->ancil_buf = ancil_buf;
 	m->ancil_size = ancil_size;
+	m->fd_to_close = fd_to_close;
 	m->next = NULL;
 
 	for (ptr = &s->wqueue; *ptr; ptr = &(*ptr)->next)
@@ -218,7 +221,8 @@ static int socket_queue_data(struct socket *s, void *buf, size_t size,
 }
 
 int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
-		       void *ancil_buf, size_t ancil_size, bool ancil_steal)
+		       void *ancil_buf, size_t ancil_size, bool ancil_steal,
+		       int fd_to_close)
 {
 	int ret;
 	void *copied;
@@ -255,7 +259,7 @@ int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
 		memcpy(ancil_copied, ancil_buf, ancil_size);
 	}
 
-	ret = socket_queue_data(s, copied, size, ancil_copied, ancil_size);
+	ret = socket_queue_data(s, copied, size, ancil_copied, ancil_size, fd_to_close);
 	if (ret < 0)
 		goto error;
 	return ret;
@@ -270,7 +274,7 @@ error:
 
 int socket_write(struct socket *s, void *buf, size_t size, bool steal)
 {
-	return socket_write_ancil(s, buf, size, steal, NULL, 0, false);
+	return socket_write_ancil(s, buf, size, steal, NULL, 0, false, 0);
 }
 
 static void socket_process_wqueue(struct socket *s)
@@ -293,14 +297,21 @@ static void socket_process_wqueue(struct socket *s)
 		mh.msg_flags = 0;
 
 		written = sendmsg(s->fd, &mh, 0);
-		if (written < 0)
+		if (written < 0) {
 			/* We might just get EAGAIN. Real errors are handled in
 			* socket_cb via EV_ERROR. */
 			return;
-		if (written > 0 && m->ancil_buf) {
-			free(m->ancil_buf);
-			m->ancil_buf = NULL;
-			m->ancil_size = 0;
+		}
+		if (written > 0) {
+			if (m->ancil_buf) {
+				free(m->ancil_buf);
+				m->ancil_buf = NULL;
+				m->ancil_size = 0;
+			}
+			if (m->fd_to_close) {
+				close(m->fd_to_close);
+				m->fd_to_close = 0;
+			}
 		}
 		if ((size_t)written == m->size) {
 			s->wqueue = m->next;

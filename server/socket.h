@@ -23,7 +23,8 @@ size_t socket_read_ancil(struct socket *s, void *buf, size_t size,
 			 void *ancil_buf, size_t *ancil_size);
 int socket_write(struct socket *s, void *buf, size_t size, bool steal);
 int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
-		       void *ancil_buf, size_t ancil_size, bool ancil_steal);
+		       void *ancil_buf, size_t ancil_size, bool ancil_steal,
+		       int fd_to_close);
 int socket_get_fd(struct socket *s);
 
 int socket_listen(unsigned port, socket_cb_new_t cb_new,

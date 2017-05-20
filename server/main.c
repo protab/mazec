@@ -1,6 +1,7 @@
 #include "common.h"
 #include "db.h"
 #include "event.h"
+#include "ipc.h"
 #include "log.h"
 #include "spawn.h"
 #include "websocket.h"
@@ -21,6 +22,7 @@ static void init_child(int argc __unused, char **argv)
 	check(event_init());
 	check(log_init(argv[1]));
 	check(websocket_init(0));
+	check(ipc_client_init());
 }
 
 int main(int argc, char **argv)

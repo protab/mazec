@@ -290,10 +290,12 @@ static void ws_headers_sent(struct socket *s __unused, void *data)
 	socket_del(wsd->s);
 	pipe = db_get_pipe(wsd->path + 1);
 	fd = socket_get_fd(wsd->s);
-	if (!pipe || ipc_send_fd(pipe, fd, IPC_FD_WEBSOCKET) < 0)
+	if (!pipe || ipc_send_fd(pipe, fd, IPC_FD_WEBSOCKET) < 0) {
 		log_warn("unable to send fd %d to child [%s]", fd, wsd->path + 1);
-	else
+	} else {
+		socket_set_unmanaged(wsd->s);
 		log_info("sending websocket fd %d to child [%s]", fd, wsd->path + 1);
+	}
 	return;
 }
 
