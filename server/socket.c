@@ -297,12 +297,9 @@ static void socket_process_wqueue(struct socket *s)
 		mh.msg_flags = 0;
 
 		written = sendmsg(s->fd, &mh, 0);
-		if (written < 0) {
-			/* We might just get EAGAIN. Real errors are handled in
-			* socket_cb via EV_ERROR. */
+		if (written < 0 && (errno == EAGAIN || errno == EINTR))
 			return;
-		}
-		if (written > 0) {
+		if (written != 0) {
 			if (m->ancil_buf) {
 				free(m->ancil_buf);
 				m->ancil_buf = NULL;
@@ -313,7 +310,7 @@ static void socket_process_wqueue(struct socket *s)
 				m->fd_to_close = 0;
 			}
 		}
-		if ((size_t)written == m->size) {
+		if (written < 0 || (size_t)written == m->size) {
 			s->wqueue = m->next;
 			free(m->buf);
 			free(m);
