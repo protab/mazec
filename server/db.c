@@ -169,6 +169,11 @@ void db_end_process(pid_t pid)
 	log_info("child %s:%d terminated", u->login, pid);
 }
 
+bool db_user_exists(const char *login)
+{
+	return !!find_login(users, login);
+}
+
 /* Returns fd or -ENOENT if user process is not running or -EINVAL if unkown
  * login. */
 int db_get_pipe(const char *login)

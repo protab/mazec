@@ -22,6 +22,7 @@ struct socket {
 	int fd;
 	bool should_close;
 	socket_cb_read_t cb_read;
+	socket_cb_read_t cb_write_done;
 	void *cb_data;
 	cb_data_destructor_t cb_destructor;
 	struct msg *wqueue;
@@ -70,27 +71,60 @@ struct socket *socket_add(int fd, socket_cb_read_t cb_read, void *cb_data,
 	s->fd = fd;
 	s->should_close = true;
 	s->cb_read = cb_read;
+	s->cb_write_done = NULL;
 	s->cb_data = cb_data;
 	s->cb_destructor = cb_destructor;
-	if (event_add_fd(fd, EV_SOCK_READ, socket_cb, s, socket_destroy) < 0) {
+	if (event_add_fd(fd, EV_SOCK | EV_READ, socket_cb, s, socket_destroy) < 0) {
 		free(s);
 		return NULL;
 	}
 	return s;
 }
 
+/* This is one shot callback! */
+void socket_set_write_done_cb(struct socket *s, socket_cb_read_t cb_write_done)
+{
+	s->cb_write_done = cb_write_done;
+}
+
 /* Sets the socket as unmanaged. The caller is responsible for closing the
  * fd. After this call, the caller may choose not to use managed writes
  * (socket_write). However, managed and unmanaged writes must not be mixed.
- * Reads are always managed. */
-void socket_set_unmanaged(struct socket *s)
+ * Reads are always managed.
+ * Returns the file descriptor. */
+int socket_set_unmanaged(struct socket *s)
 {
 	s->should_close = false;
+	return s->fd;
+}
+
+/* Use only for logging purposes. */
+int socket_get_fd(struct socket *s)
+{
+	return s->fd;
+}
+
+int socket_stop_reading(struct socket *s)
+{
+	return event_change_fd_remove(s->fd, EV_READ);
 }
 
 void socket_del(struct socket *s)
 {
 	event_del_fd(s->fd);
+}
+
+static void socket_del_cb(struct socket *s, void *data __unused)
+{
+	socket_del(s);
+}
+
+void socket_flush_and_del(struct socket *s)
+{
+	if (!s->wqueue)
+		socket_del(s);
+	else
+		socket_set_write_done_cb(s, socket_del_cb);
 }
 
 size_t socket_read(struct socket *s, void *buf, size_t size)
@@ -126,7 +160,7 @@ int socket_write(struct socket *s, void *buf, size_t size, bool steal)
 	int ret;
 	void *copied;
 
-	ret = event_change_fd(s->fd, EV_SOCK_READ | EV_SOCK_WRITE);
+	ret = event_change_fd_add(s->fd, EV_WRITE);
 	if (ret < 0)
 		return ret;
 
@@ -168,7 +202,11 @@ static void socket_process_wqueue(struct socket *s)
 	}
 
 	/* no more messages queued */
-	event_change_fd(s->fd, EV_SOCK_READ);
+	event_change_fd_remove(s->fd, EV_WRITE);
+	if (s->cb_write_done) {
+		s->cb_write_done(s, s->cb_data);
+		s->cb_write_done = NULL;
+	}
 }
 
 struct listen_data {

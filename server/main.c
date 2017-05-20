@@ -3,7 +3,9 @@
 #include "event.h"
 #include "log.h"
 #include "spawn.h"
-#include "test.h"
+#include "websocket.h"
+
+#define WEBSOCKET_PORT	1234
 
 static void init_master(int argc, char **argv)
 {
@@ -11,13 +13,14 @@ static void init_master(int argc, char **argv)
 	check(log_init("<master>"));
 	check(spawn_init(argc, argv));
 	check(db_reload());
-	check(test_init_master());
+	check(websocket_init(WEBSOCKET_PORT));
 }
 
 static void init_child(int argc __unused, char **argv)
 {
 	check(event_init());
 	check(log_init(argv[1]));
+	check(websocket_init(0));
 }
 
 int main(int argc, char **argv)

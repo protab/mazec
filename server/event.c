@@ -146,6 +146,15 @@ int event_del_fd(int fd)
 	return ret;
 }
 
+static struct fd_data *find_event(int fd)
+{
+	struct fd_data *fdd;
+
+	for (fdd = fdd_hash[hash(fd)]; fdd && fdd->fd != fd; fdd = fdd->next)
+		;
+	return fdd;
+}
+
 static int event_change_fd_data(struct fd_data *fdd, int enable)
 {
 	struct epoll_event e;
@@ -174,10 +183,8 @@ static int event_change_fd_data(struct fd_data *fdd, int enable)
 
 int event_enable_fd(int fd, bool enable)
 {
-	struct fd_data *fdd;
+	struct fd_data *fdd = find_event(fd);
 
-	for (fdd = fdd_hash[hash(fd)]; fdd && fdd->fd != fd; fdd = fdd->next)
-		;
 	if (!fdd)
 		return -ENOENT;
 	return event_change_fd_data(fdd, (int)enable);
@@ -185,13 +192,31 @@ int event_enable_fd(int fd, bool enable)
 
 int event_change_fd(int fd, unsigned events)
 {
-	struct fd_data *fdd;
+	struct fd_data *fdd = find_event(fd);
 
-	for (fdd = fdd_hash[hash(fd)]; fdd && fdd->fd != fd; fdd = fdd->next)
-		;
 	if (!fdd)
 		return -ENOENT;
 	fdd->events = events;
+	return event_change_fd_data(fdd, -1);
+}
+
+int event_change_fd_add(int fd, unsigned events)
+{
+	struct fd_data *fdd = find_event(fd);
+
+	if (!fdd)
+		return -ENOENT;
+	fdd->events |= events;
+	return event_change_fd_data(fdd, -1);
+}
+
+int event_change_fd_remove(int fd, unsigned events)
+{
+	struct fd_data *fdd = find_event(fd);
+
+	if (!fdd)
+		return -ENOENT;
+	fdd->events &= ~events;
 	return event_change_fd_data(fdd, -1);
 }
 
