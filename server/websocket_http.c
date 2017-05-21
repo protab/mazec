@@ -180,6 +180,27 @@ static int process_header_chunk(struct ws_http_data *wsd, char *buf, size_t coun
 	return 0;
 }
 
+static bool find_value_token(char *buf, const char *needle)
+{
+	char *next;
+	bool finished = false;
+
+	while (!finished) {
+		while (*buf == ' ' || *buf == '\t')
+			buf++;
+		for (next = buf; *next && *next != ','; next++)
+			;
+		if (*next)
+			*next = '\0';
+		else
+			finished = true;
+		if (!strcasecmp(buf, needle))
+			return true;
+		buf = next + 1;
+	}
+	return false;
+}
+
 static int process_field(struct ws_http_data *wsd);
 
 static int process_value(struct ws_http_data *wsd)
@@ -190,7 +211,7 @@ static int process_value(struct ws_http_data *wsd)
 			return -EOPNOTSUPP;
 		wsd->handshake |= HANDSHAKE_UPGRADE;
 	} else if (!strcasecmp(wsd->field, "connection")) {
-		if (strcasecmp(wsd->buf, "upgrade"))
+		if (!find_value_token(wsd->buf, "upgrade"))
 			return -EOPNOTSUPP;
 		wsd->handshake |= HANDSHAKE_CONNECTION;
 	} else if (!strcasecmp(wsd->field, "sec-websocket-version")) {

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "log.h"
 #include "socket.h"
 
 #define BUF_SIZE		1024
@@ -114,10 +115,12 @@ static void reassembly_message(struct ws_data *wsd)
 		wsd->reasm_opcode = wsd->opcode;
 		wsd->reassembled = wsd->payload;
 		wsd->reassembled_len = wsd->payload_len;
+		wsd->payload = NULL;
 	} else if (wsd->payload_len > 0) {
 		if (!wsd->reassembled) {
 			wsd->reassembled = wsd->payload;
 			wsd->reassembled_len = wsd->payload_len;
+			wsd->payload = NULL;
 		} else {
 			char *new;
 
@@ -195,7 +198,6 @@ static int process_chunk(struct ws_data *wsd, char *buf, size_t len)
 				if ((c & 0x07) > 2)
 					/* unknown opcode */
 					return -EINVAL;
-				wsd->offset++;
 			} else if (wsd->offset == 1) {
 				if (!(c & 0x80))
 					/* mask bit, mandatory for client */
@@ -211,15 +213,15 @@ static int process_chunk(struct ws_data *wsd, char *buf, size_t len)
 					wsd->payload_enc_len = 4;
 					wsd->payload_size = 0;
 				}
-				wsd->offset++;
 			} else if (wsd->offset < 2 + (unsigned)wsd->payload_enc_len) {
 				wsd->payload_size <<= 8;
 				wsd->payload_size |= c;
-				wsd->offset++;
 			} else if (wsd->offset < 6 + (unsigned)wsd->payload_enc_len) {
 				wsd->mask[wsd->offset - 2 -  wsd->payload_enc_len] = c;
-				wsd->offset++;
-			} else {
+			}
+			wsd->offset++;
+
+			if (wsd->offset == 6 + (unsigned)wsd->payload_enc_len) {
 				if (wsd->payload_size > MAX_PAYLOAD_SIZE)
 					return -ENOSPC;
 				wsd->payload_len = 0;
@@ -236,6 +238,7 @@ static int process_chunk(struct ws_data *wsd, char *buf, size_t len)
 		} else {
 			/* payload */
 			wsd->payload[wsd->payload_len] = c ^ wsd->mask[wsd->payload_len % 4];
+			wsd->payload_len++;
 			if (wsd->payload_len == wsd->payload_size) {
 				ret = consume_message(wsd);
 				if (ret < 0)
@@ -259,6 +262,7 @@ static void ws_read(struct socket *s, void *data)
 			break;
 		ret = process_chunk(wsd, buf, count);
 		if (ret < 0) {
+			log_info("closing websocket fd %d (reason %d)", socket_get_fd(s), ret);
 			switch (ret) {
 			case ENOMEM:
 				socket_del(s);
