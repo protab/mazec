@@ -38,7 +38,9 @@ struct ws_data {
 };
 
 static websocket_cb_t ws_cb;
+static websocket_close_cb_t ws_close_cb;
 static struct ws_data *websockets;
+static int ws_count;
 
 static void ws_free(void *data)
 {
@@ -50,6 +52,8 @@ static void ws_free(void *data)
 	if (*ptr)
 		*ptr = wsd->next;
 	free(wsd);
+	if (!--ws_count && ws_close_cb)
+		ws_close_cb();
 }
 
 static void ws_write(struct socket *s, unsigned opcode, void *buf, size_t size, bool steal)
@@ -304,6 +308,7 @@ int websocket_add(int fd)
 	}
 	wsd->next = websockets;
 	websockets = wsd;
+	ws_count++;
 	return 0;
 }
 
@@ -320,7 +325,9 @@ void websocket_broadcast(void *buf, size_t size)
 		websocket_write(wsd->s, buf, size, false);
 }
 
-void websocket_init(websocket_cb_t cb)
+void websocket_init(websocket_cb_t cb, websocket_close_cb_t close_cb)
 {
 	ws_cb = cb;
+	ws_close_cb = close_cb;
+	ws_count = 0;
 }

@@ -34,7 +34,7 @@ static void init_child(int argc __unused, char **argv)
 	check(event_init());
 	check(log_init(argv[1]));
 	check(ipc_client_init());
-	websocket_init(ws_debug);
+	websocket_init(ws_debug, event_quit);
 }
 
 int main(int argc, char **argv)
