@@ -166,7 +166,7 @@ void db_start_process(const char *login, pid_t pid, int pipefd)
 	u->pid = pid;
 	u->pipe = socket_add(pipefd, pipe_read, NULL, NULL);
 	socket_ref(u->pipe);
-	log_info("child %s:%d started", login, pid);
+	log_info("child [%s:%d] started with pipe fd %d", login, pid, pipefd);
 }
 
 void db_end_process(pid_t pid)
@@ -184,7 +184,7 @@ void db_end_process(pid_t pid)
 	socket_unref(u->pipe);
 	u->pid = 0;
 	u->pipe = NULL;
-	log_info("child %s:%d terminated", u->login, pid);
+	log_info("child [%s:%d] terminated", u->login, pid);
 }
 
 bool db_user_exists(const char *login)

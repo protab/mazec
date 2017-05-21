@@ -79,6 +79,7 @@ struct socket *socket_add(int fd, socket_cb_read_t cb_read, void *cb_data,
 	s->cb_write_done = NULL;
 	s->cb_data = cb_data;
 	s->cb_destructor = cb_destructor;
+	s->wqueue = NULL;
 	if (event_add_fd(fd, EV_SOCK | EV_READ, socket_cb, s, socket_kill) < 0) {
 		free(s);
 		return NULL;
@@ -352,7 +353,7 @@ static void socket_accept(struct socket *s, void *data)
 		if (fd < 0)
 			return;
 		// FIXME: convert IPv4-mapped IPv6 address into IPv4 format
-		log_info("accepting connection on port %u from %s on fd %d", ldata->port,
+		log_info("accepting connection on port %u from %s with fd %d", ldata->port,
 			inet_ntop(sin6.sin6_family, &sin6.sin6_addr, buf, sizeof(buf)), fd);
 		conn_s = socket_add(fd, ldata->cb_read, NULL, ldata->cb_destructor);
 		if (!conn_s) {
