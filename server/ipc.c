@@ -6,6 +6,7 @@
 #include "common.h"
 #include "log.h"
 #include "socket.h"
+#include "websocket_data.h"
 
 #define BUF_SIZE	512
 static void pipe_read(struct socket *s, void *data __unused)
@@ -40,6 +41,8 @@ static void pipe_read(struct socket *s, void *data __unused)
 		memcpy(&type, buf, sizeof(int));
 		if (type == IPC_FD_WEBSOCKET) {
 			log_info("received websocket fd %d", fd);
+			if (websocket_add(fd) < 0)
+				close(fd);
 		} else {
 			log_info("received fd %d of unknown type %d", fd, type);
 			close(fd);
