@@ -4,9 +4,21 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "common.h"
+#include "event.h"
 #include "log.h"
 #include "socket.h"
 #include "websocket_data.h"
+
+#define IDLE_TIMEOUT	500
+static int idle_timer;
+
+static void cancel_idle_timer(void)
+{
+	if (idle_timer < 0)
+		return;
+	timer_del(idle_timer);
+	idle_timer = -1;
+}
 
 #define BUF_SIZE	512
 static void pipe_read(struct socket *s, void *data __unused)
@@ -41,14 +53,26 @@ static void pipe_read(struct socket *s, void *data __unused)
 		memcpy(&type, buf, sizeof(int));
 		if (type == IPC_FD_WEBSOCKET) {
 			log_info("received websocket fd %d", fd);
-			if (websocket_add(fd) < 0)
+			if (websocket_add(fd) < 0) {
 				close(fd);
+				return;
+			}
+			cancel_idle_timer();
 		} else {
 			log_info("received fd %d of unknown type %d", fd, type);
 			close(fd);
 			return;
 		}
 	}
+}
+
+static int idle_expired(int fd __unused, unsigned events, void *data __unused)
+{
+	if (events != EV_READ)
+		return 1;
+	log_info("no connection in %d ms, terminating", IDLE_TIMEOUT);
+	event_quit();
+	return 0;
 }
 
 int ipc_client_init(void)
@@ -60,6 +84,12 @@ int ipc_client_init(void)
 		return -ENOMEM;
 	/* We never close fd 2. */
 	socket_set_unmanaged(s);
+
+	idle_timer = timer_new(idle_expired, NULL, NULL);
+	if (idle_timer < 0)
+		return idle_timer;
+	timer_arm(idle_timer, IDLE_TIMEOUT);
+
 	return 0;
 }
 
