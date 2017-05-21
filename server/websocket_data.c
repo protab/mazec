@@ -76,7 +76,7 @@ static void ws_write(struct socket *s, unsigned opcode, void *buf, size_t size, 
 	}
 	if (socket_write(s, hdr, 2 + payload_enc_len, false) < 0)
 		goto error;
-	if (buf && socket_write(s, buf, size, steal) < 0)
+	if (size && socket_write(s, buf, size, steal) < 0)
 		goto error;
 	return;
 
@@ -137,7 +137,9 @@ static void reassembly_message(struct ws_data *wsd)
 	if (!wsd->fin)
 		return;
 
-	ws_cb(wsd->s, wsd->reassembled, wsd->reassembled_len);
+	if (wsd->reassembled_len)
+		/* ignore empty messages */
+		ws_cb(wsd->s, wsd->reassembled, wsd->reassembled_len);
 
 error:
 	reset_reassembly(wsd);
