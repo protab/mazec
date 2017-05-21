@@ -18,12 +18,13 @@ static void init_master(int argc, char **argv)
 	check(websocket_http_init(WEBSOCKET_PORT));
 }
 
-static void ws_debug(struct socket *s __unused, void *buf, size_t len)
+static void ws_debug(struct socket *s, void *buf, size_t len)
 {
 	char *disp = buf;
 
 	disp[len - 1] = '\0';
 	log_info("got: %s", disp);
+	websocket_write(s, "ack", 3, false);
 }
 
 static void init_child(int argc __unused, char **argv)
