@@ -3,15 +3,14 @@
 #include <stdbool.h>
 #include <sys/epoll.h>
 
-#define EQUIT	256
-
 #define EV_READ		EPOLLIN
 #define EV_WRITE	EPOLLOUT
 #define EV_SOCK		EPOLLRDHUP
 #define EV_ERROR	(EPOLLERR | EPOLLHUP | EPOLLRDHUP)
 
-/* Return values: 0 to keep, 1 to disable (but not remove!), 2 to terminate
- * the event loop. */
+/* Return values: 0 to keep, 1 to disable (but not remove!), < 0 to
+ * signalize error and terminate the event loop. To cleanly shutdown, call
+ * event_quit. */
 typedef int (*event_callback_t)(int fd, unsigned events, void *data);
 
 typedef void (*cb_data_destructor_t)(void *data);
@@ -25,6 +24,7 @@ int event_change_fd(int fd, unsigned events);
 int event_change_fd_add(int fd, unsigned events);
 int event_change_fd_remove(int fd, unsigned events);
 int event_loop(void);
+void event_quit(void);
 
 int timer_new(event_callback_t cb, void *cb_data,
 	      cb_data_destructor_t cb_destructor);

@@ -2,6 +2,7 @@
 #include "event.h"
 #include <errno.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,7 @@ struct fd_data {
 
 static int epfd;
 static int sigfd;
+static bool quit;
 
 #define FDD_HASH_SIZE	256
 static struct fd_data *fdd_hash[FDD_HASH_SIZE];
@@ -39,13 +41,12 @@ static struct fd_data *deleted = NULL;
 static int sig_handler(int fd, unsigned events __unused, void *data __unused)
 {
 	struct signalfd_siginfo ssi;
-	int ret = 0;
 
 	while (read(fd, &ssi, sizeof(ssi)) > 0) {
 		switch (ssi.ssi_signo) {
 		case SIGINT:
 		case SIGTERM:
-			ret = -EQUIT;
+			event_quit();
 			break;
 		case SIGHUP:
 			db_reload();
@@ -69,7 +70,7 @@ static int sig_handler(int fd, unsigned events __unused, void *data __unused)
 			break;
 		}
 	}
-	return ret;
+	return 0;
 }
 
 int event_init(void)
@@ -240,8 +241,12 @@ int event_loop(void)
 	int cnt;
 	int ret = 0;
 
-	while (ret >= 0) {
+	quit = false;
+	while (ret >= 0 && !quit) {
 		release_deleted();
+		/* re-check as a destructor may have called event_quit */
+		if (quit)
+			break;
 		cnt = epoll_wait(epfd, evbuf, EVENTS_MAX, -1);
 		if (cnt < 0) {
 			if (errno == EINTR)
@@ -259,9 +264,12 @@ int event_loop(void)
 				break;
 		}
 	}
-	if (ret == -EQUIT)
-		return 0;
-	return ret;
+	return ret < 0 ? ret : 0;
+}
+
+void event_quit(void)
+{
+	quit = true;
 }
 
 int timer_new(event_callback_t cb, void *cb_data,
