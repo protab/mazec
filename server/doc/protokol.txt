@@ -1,9 +1,7 @@
 Protokol je přes TCP, textový. Ve zprávách se server a klient vždy střídají,
 protokol je v zásadě primitivní RPC. Iniciátor komunikace je klient.
 
-Pro daného uživatele lze najednou procházet pouze jeden level. Pokud daný
-level umožňuje více spojení najednou, další spojení lze navázat až poté, co
-server potvrdil zprávu LEVL u prvního spojení.
+Pro daného uživatele lze najednou procházet pouze jeden level.
 
 První čtyři znaky každé zprávy je příkaz, zbytek jsou volitelné parametry.
 Celá zpráva je kódována v ASCII. Zpráva je ukončena newlinem. Server
@@ -29,7 +27,8 @@ USER <string>		Povinně první zpráva protokolu. Přihlašuje uživatele.
 			uživatele.
 LEVL <string>		Povinně druhá odeslaná zpráva klientem. Vybírá level
 			přes kódové jméno (->DONE nebo OVER). Může selhat na
-			neexistenci levelu.
+			neexistenci levelu nebo na příliš mnoho otevřených
+			spojení.
 WAIT			Čekám na spuštění přes frontend (->DONE nebo OVER).
 			Selže při timeoutu.
 
