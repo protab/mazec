@@ -5,9 +5,10 @@ Pro daného uživatele lze najednou procházet pouze jeden level. Pokud daný
 level umožňuje více spojení najednou, další spojení lze navázat až poté, co
 server potvrdil zprávu LEVL u prvního spojení.
 
-První čtyři znaky každé zprávy je příkaz, zbytek jsou volitelná data. Celá
-zpráva je kódována v ASCII. Zpráva je ukončena newlinem. Server rozeznává LF
-i CRLF a vrací odpověď zakončenou stejným způsobem jako byl požadavek.
+První čtyři znaky každé zprávy je příkaz, zbytek jsou volitelné parametry.
+Celá zpráva je kódována v ASCII. Zpráva je ukončena newlinem. Server
+rozeznává LF i CRLF a vrací odpověď zakončenou stejným způsobem jako byl
+požadavek.
 
 Server odesílá následující zprávy:
 
