@@ -19,6 +19,7 @@ struct user {
 
 static struct user *users = NULL;
 static struct user *inactive = NULL;
+static bool db_inited = false;
 
 static struct user **get_last_ptr(struct user **list, int *count)
 {
@@ -80,6 +81,9 @@ int db_reload(void)
 	int cnt_before, cnt_after, cnt_new = 0;
 	char login[LOGIN_LEN + 1];
 
+	if (!db_inited)
+		/* we're a child, ignore */
+		return 0;
 	log_info("reloading db from %s", DB_PATH);
 	f = fopen(DB_PATH, "r");
 	if (!f)
@@ -132,6 +136,12 @@ int db_reload(void)
 	log_info("new users: %d, inactive users before/after: %d/%d",
 		 cnt_new, cnt_before, cnt_after);
 	return 0;
+}
+
+int db_init(void)
+{
+	db_inited = true;
+	return db_reload();
 }
 
 #define BUF_SIZE 1024

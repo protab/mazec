@@ -16,7 +16,7 @@ static void init_master(int argc, char **argv)
 	check(event_init());
 	log_init("<master>");
 	spawn_init(argc, argv);
-	check(db_reload());
+	check(db_init());
 	check(proto_server_init(APP_PORT));
 	check(websocket_http_init(WEBSOCKET_PORT));
 }
