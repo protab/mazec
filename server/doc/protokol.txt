@@ -1,0 +1,106 @@
+Protokol je přes TCP, textový. Jedno spojení reprezentuje jeden průchod
+bludištěm.
+
+Ve zprávách se server a klient vždy střídají, protokol je v zásadě primitivní
+RPC. Iniciátor komunikace je klient.
+
+Zpráva protokolu je dlouhá maximálně 1500 bajtů, a musí přijít v jednom paketu.
+
+První čtyři znaky jsou hlavička, zbytek jsou volitelná data. Celá zpráva je
+kódována v ASCII.
+
+Server odesílá následujícími zprávami:
+
+DONE			Očekávám další příkaz. (-> LEVL, GET*, WHAT, MOVE)
+DATA <int>		Odpověď s daty (-> GET*, WHAT, MOVE)
+NOPE			Server akci záměrně neprovedl.
+OVER <string>		Hra končí, server ukončuje spojení. Došlo k chybě nebo
+			k vítězství. Obsahuje zprávu, kterou je vhodné si
+			přečíst.
+
+A přijímá tyto:
+
+USER <string>		Povinně první příkaz protokolu. Přihlašuje uživatele.
+			(->DONE nebo OVER). Může selhat na neexistenci
+			uživatele / chybějící prostředky / už běžící session
+			pro tohoto uživatele.
+LEVL <string>		Povinně druhý příkaz protokolu. Vybírá level přes
+			kódové jméno. (->DONE nebo OVER) Může selhat na
+			404 nebo 403 :)
+WAIT			Čekám na spuštění přes frontend (->DONE nebo OVER).
+			Selže při timeoutu.
+
+GETW <int>		Dotaz na šířku (->DATA)
+GETH <int>		Dotaz na výšku (->DATA)
+GETX <int>		Dotaz na X hráče (->DATA)
+GETY <int>		Dotaz na Y hráče (->DATA)
+WHAT <int> <int>	Dotaz na barvu na políčku (->DATA nebo OVER, pokud je
+			mimo rozsah 0-W, 0-H)
+MOVE <char>		Pohybový (zatím) příkaz (->DONE nebo NOPE, pokud pohyb
+			nelze provést, OVER pokud dojde k vítězství/prohře)
+
+Na libovolné porušení protokolu server reaguje zprávou OVER a ukončením
+spojení. Pokud chce klient skončit, prostě spojení ukončí sám. Pokud se klient
+dlouho neozve, server uzavře spojení bez varování.
+
+Jako pohybový příkaz server rozeznává (ze začátku) 'W', 'S', 'A', 'D'. Časem se
+bude měnit význam těchto příkazů a můžou přibýt další.
+
+Typický průběh:
+
+	Klient			Server
+	USER ucastnik
+				DONE
+	LEVL protab
+				DONE
+	WAIT
+		........
+				DONE
+	GETW
+				DATA 500
+	GETH
+				DATA 500
+	GETX
+				DATA 0
+	GETY
+				DATA 0
+	MOVE D
+				DONE
+	MOVE S
+				OVER Vyborne! Dalsi vyzvou je "matfyz".
+
+Server měří čas od prvního příkazu z druhé skupiny, tj. GET*, WHAT nebo MOVE.
+
+Knihovny by měly nabízet nějaké pekné API k odesílání těchto zpráv, a nabízet
+dva režimy fungování:
+
+1) Předám knihovně callback, tím se odešle WAIT, a callback se mi volá ve
+   smyčce během hry. Návratovou hodnotou callbacku je char, odeslaný jako další
+   pohybový příkaz. Předpokládaný způsob. Pokud je to možné, měl by jít jako
+   callback zaregistrovat 'readkey' :) Knihovna odchytává výjjimky vyhazované
+   odpovědí OVER, reaguje na ně ukončením smyčky.
+2) Vše si dělám sám, po inicializaci knihovny volám RPC cally, chyby řeším
+   ručně.
+
+Kdykoli server odpoví OVER, knihovny vyhodí výjjimku. V případě Cčka váhám,
+jestli vracet chybu (tj. ale get_width(&width)), nebo chybu vypsat a natvrdo
+program ukončit (tj. nekonzistence v jejich případných datech).
+
+Knihovny musí umožňovat odeslání ručné sestrojené zprávy, na kterou vrátí
+syrovou odpověď. Měli by exportovat svoje funkce, kterými ošetřují chyby (OVER)
+a přečtou zprávu DATA. V pozdějších levelech tedy můžeme nějakou funkcionalitu
+přidat (zatím to není v plánu). Pokud je to možné, měly by "normální" API volání
+být jednoduché abstrakce, jejichž zdroják nebude utopený v síťovém kódu (tj.
+třeba v header file). Příklad:
+
+int maze_what(unsigned x, unsigned y) {
+	char buf [256];
+	snprintf("WHAT %u %u", 256, x, y);
+	maze_custom_call(buf, buf);
+	maze_handle_over(buf);
+	maze_assert_message_type(buf, "DATA");
+	return maze_parse_data(buf);
+}
+
+Knihovna by měla fungovat vícekrát za běh programu. Mělo by být možné jedním
+spojením mapu prozkoumat, druhým projít.
