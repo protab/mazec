@@ -3,11 +3,13 @@
 #include "event.h"
 #include "ipc.h"
 #include "log.h"
+#include "proto.h"
 #include "spawn.h"
 #include "websocket_data.h"
 #include "websocket_http.h"
 
 #define WEBSOCKET_PORT	1234
+#define APP_PORT	4000
 
 static void init_master(int argc, char **argv)
 {
@@ -15,6 +17,7 @@ static void init_master(int argc, char **argv)
 	log_init("<master>");
 	spawn_init(argc, argv);
 	check(db_reload());
+	check(proto_server_init(APP_PORT));
 	check(websocket_http_init(WEBSOCKET_PORT));
 }
 
@@ -34,7 +37,8 @@ static void init_child(int argc __unused, char **argv)
 	check(event_init());
 	log_init(argv[1]);
 	check(ipc_client_init());
-	websocket_init(ws_debug, event_quit);
+	proto_client_init(event_quit);
+	websocket_init(ws_debug, proto_cond_close);
 }
 
 int main(int argc, char **argv)

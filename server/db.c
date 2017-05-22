@@ -10,8 +10,6 @@
 #include "socket.h"
 #include "spawn.h"
 
-#define LOGIN_LEN	30
-
 struct user {
 	char login[LOGIN_LEN + 1];
 	pid_t pid;

@@ -4,10 +4,11 @@
 
 enum {
 	IPC_FD_WEBSOCKET,
-	IPC_FD_APP,
+	IPC_FD_APP_LF,
+	IPC_FD_APP_CRLF,
 };
 
 int ipc_client_init(void);
-int ipc_send_fd(struct socket *s, int fd, int type);
+void ipc_send_socket(char *login, struct socket *what, int type);
 
 #endif

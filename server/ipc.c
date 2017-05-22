@@ -4,8 +4,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "common.h"
+#include "db.h"
 #include "event.h"
 #include "log.h"
+#include "proto.h"
 #include "socket.h"
 #include "websocket_data.h"
 
@@ -57,12 +59,16 @@ static void pipe_read(struct socket *s, void *data __unused)
 				close(fd);
 				return;
 			}
-			cancel_idle_timer();
+		} else if (type == IPC_FD_APP_CRLF || type == IPC_FD_APP_LF) {
+			log_info("received app socket fd %d (type %d)", fd, type);
+			if (proto_client_add(fd, type == IPC_FD_APP_CRLF) < 0)
+				return;
 		} else {
 			log_info("received fd %d of unknown type %d", fd, type);
 			close(fd);
 			return;
 		}
+		cancel_idle_timer();
 	}
 }
 
@@ -93,7 +99,7 @@ int ipc_client_init(void)
 	return 0;
 }
 
-int ipc_send_fd(struct socket *s, int fd, int type)
+static int ipc_send_fd(struct socket *s, int fd, int type)
 {
 	struct cmsghdr *cmsg;
 	size_t len;
@@ -111,4 +117,27 @@ int ipc_send_fd(struct socket *s, int fd, int type)
 		return ret;
 	}
 	return 0;
+}
+
+static const char *str_type(int type)
+{
+	if (type == IPC_FD_WEBSOCKET)
+		return "websocket";
+	return "app socket";
+}
+
+void ipc_send_socket(char *login, struct socket *what, int type)
+{
+	struct socket *pipe;
+	int fd;
+
+	socket_del(what);
+	pipe = db_get_pipe(login);
+	fd = socket_get_fd(what);
+	if (!pipe || ipc_send_fd(pipe, fd, type) < 0) {
+		log_warn("unable to send %s fd %d to child [%s]", str_type(type), fd, login);
+	} else {
+		socket_set_unmanaged(what);
+		log_info("sending %s fd %d to child [%s]", str_type(type), fd, login);
+	}
 }
