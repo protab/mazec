@@ -16,7 +16,7 @@ static char *x_get(int *res)
 }
 
 static const struct app_ops ops = {
-	.max_conn = 1,
+	.max_conn = 2,
 	.what = x_what,
 	.get_x = x_get,
 	.get_y = x_get,

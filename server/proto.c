@@ -33,12 +33,14 @@ struct p_data {
 	bool expect_lf;
 	cmd_process_t process;
 	void *data;
+	bool bound;
 	// TODO: timeout when nothing received for some time
 };
 
 static proto_close_cb_t p_close_cb;
 static int p_count;
-static int p_max;
+static int p_bound_count;
+static int p_bound_max;
 static char *p_code;
 static const struct app_ops *p_level;
 
@@ -303,16 +305,21 @@ static char *process_level(struct p_data *pd)
 
 	if (p_code && strcmp(pd->val, p_code))
 		return P_MSG_LEVL_NOT_MATCHING;
+	if (p_bound_count >= p_bound_max)
+		return P_MSG_CONN_TOO_MANY;
+
 	if (!p_code) {
 		p_level = app_get_level(pd->val);
 		if (!p_level)
 			return P_MSG_LEVL_UNKNOWN;
 		p_code = sstrdup(pd->val);
-		p_max = p_level->max_conn;
+		p_bound_max = p_level->max_conn;
 	}
 	if (p_level->get_data)
 		pd->data = p_level->get_data();
+	pd->bound = true;
 	pd->process = process_cmd;
+	p_bound_count++;
 
 	p_send_ack(pd);
 	return NULL;
@@ -356,7 +363,8 @@ void proto_client_init(proto_close_cb_t close_cb)
 {
 	p_close_cb = close_cb;
 	p_count = 0;
-	p_max = 1;
+	p_bound_count = 0;
+	p_bound_max = 1;
 	p_code = NULL;
 }
 
@@ -370,12 +378,15 @@ void proto_cond_close(void)
 static void p_free(void *data)
 {
 	struct p_data *pd = data;
+	bool bound = pd->bound;
 
+	p_count--;
+	if (bound)
+		p_bound_count--;
 	if (p_level && p_level->free_data)
 		p_level->free_data(pd->data);
 	p_server_free(data);
-	p_count--;
-	if (p_close_cb)
+	if ((!p_count || bound) && p_close_cb)
 		p_close_cb();
 }
 
@@ -383,7 +394,6 @@ static void p_free(void *data)
 int proto_client_add(int fd, bool crlf)
 {
 	struct p_data *pd;
-	int ret;
 
 	pd = szalloc(sizeof(*pd));
 	pd->s = socket_add(fd, p_read, pd, p_free);
@@ -394,14 +404,7 @@ int proto_client_add(int fd, bool crlf)
 	}
 	pd->process = process_level;
 	pd->crlf = crlf;
+	p_count++;
 
-	if (p_count >= p_max) {
-		p_report_error(pd, p_code ? P_MSG_CONN_TOO_MANY : P_MSG_PARALLEL_INIT);
-	} else {
-		ret = p_send_ack(pd);
-		if (ret < 0)
-			return ret;
-		p_count++;
-	}
-	return 0;
+	return p_send_ack(pd);
 }

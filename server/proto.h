@@ -2,7 +2,8 @@
 #define PROTO_H
 #include <stdbool.h>
 
-/* called when any(!) app socket is closed */
+/* called when the last app socket is closed or when a bound app socket with
+ * protocol error is closed */
 typedef void (*proto_close_cb_t)(void);
 
 int proto_server_init(unsigned port);
