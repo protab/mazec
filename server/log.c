@@ -14,13 +14,10 @@ const char *level_desc[__LOG_LEVEL_MAX] = { "INFO", "WARN", "ERR!" };
 static pid_t pid;
 static char *domain = NULL;
 
-int log_init(const char *name)
+void log_init(const char *name)
 {
 	pid = getpid();
-	domain = strdup(name);
-	if (!domain)
-		return -errno;
-	return 0;
+	domain = sstrdup(name);
 }
 
 #define MAX_LOG	1024

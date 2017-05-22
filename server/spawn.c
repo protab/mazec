@@ -11,12 +11,9 @@
 
 static char *prg_path;
 
-int spawn_init(int __unused argc, char **argv)
+void spawn_init(int __unused argc, char **argv)
 {
-	prg_path = strdup(argv[0]);
-	if (!prg_path)
-		return -errno;
-	return 0;
+	prg_path = sstrdup(argv[0]);
 }
 
 /* The caller is responsible for checking that the given login exists. */

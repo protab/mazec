@@ -1,4 +1,3 @@
-#include "common.h"
 #include "event.h"
 #include <errno.h>
 #include <signal.h>
@@ -13,6 +12,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include "common.h"
 #include "db.h"
 #include "log.h"
 #include "spawn.h"
@@ -103,9 +103,7 @@ int event_add_fd(int fd, unsigned events, event_callback_t cb, void *cb_data,
 	struct fd_data *fdd, **ptr;
 	struct epoll_event e;
 
-	fdd = malloc(sizeof(*fdd));
-	if (!fdd)
-		return -ENOMEM;
+	fdd = salloc(sizeof(*fdd));
 	fdd->fd = fd;
 	fdd->events = events;
 	fdd->enabled = true;
@@ -118,7 +116,7 @@ int event_add_fd(int fd, unsigned events, event_callback_t cb, void *cb_data,
 	e.data.ptr = fdd;
 
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &e) < 0) {
-		free(fdd);
+		sfree(fdd);
 		return -errno;
 	}
 
@@ -228,7 +226,7 @@ static void release_deleted(void)
 
 		if (deleted->cb_destructor)
 			deleted->cb_destructor(deleted->cb_data);
-		free(deleted);
+		sfree(deleted);
 		deleted = next;
 	}
 }

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "common.h"
 #include "log.h"
 #include "socket.h"
 
@@ -51,7 +52,7 @@ static void ws_free(void *data)
 		;
 	if (*ptr)
 		*ptr = wsd->next;
-	free(wsd);
+	sfree(wsd);
 	if (!--ws_count && ws_close_cb)
 		ws_close_cb();
 }
@@ -86,7 +87,7 @@ static void ws_write(struct socket *s, unsigned opcode, void *buf, size_t size, 
 
 error:
 	if (steal)
-		free(buf);
+		sfree(buf);
 }
 
 static void ws_error(struct socket *s, uint16_t code)
@@ -99,7 +100,7 @@ static void ws_error(struct socket *s, uint16_t code)
 static void reset_message(struct ws_data *wsd)
 {
 	if (wsd->payload)
-		free(wsd->payload);
+		sfree(wsd->payload);
 	wsd->payload = NULL;
 	wsd->offset = 0;
 }
@@ -107,7 +108,7 @@ static void reset_message(struct ws_data *wsd)
 static void reset_reassembly(struct ws_data *wsd)
 {
 	if (wsd->reassembled)
-		free(wsd->reassembled);
+		sfree(wsd->reassembled);
 	wsd->reassembled = NULL;
 	wsd->reassembled_len = 0;
 	wsd->reasm_opcode = 0;
@@ -130,9 +131,7 @@ static void reassembly_message(struct ws_data *wsd)
 
 			if (wsd->reassembled_len + wsd->payload_len > MAX_PAYLOAD_SIZE)
 				goto error;
-			new = realloc(wsd->reassembled, wsd->reassembled_len + wsd->payload_len);
-			if (!new)
-				goto error;
+			new = srealloc(wsd->reassembled, wsd->reassembled_len + wsd->payload_len);
 			wsd->reassembled = new;
 			memcpy(new + wsd->reassembled_len, wsd->payload, wsd->payload_len);
 			wsd->reassembled_len += wsd->payload_len;
@@ -236,9 +235,7 @@ static int process_chunk(struct ws_data *wsd, char *buf, size_t len)
 					if (ret < 0)
 						return ret;
 				} else {
-					wsd->payload = malloc(wsd->payload_size);
-					if (!wsd->payload)
-						return -ENOMEM;
+					wsd->payload = salloc(wsd->payload_size);
 				}
 			}
 		} else {
@@ -270,9 +267,6 @@ static void ws_read(struct socket *s, void *data)
 		if (ret < 0) {
 			log_info("closing websocket fd %d (reason %d)", socket_get_fd(s), ret);
 			switch (ret) {
-			case ENOMEM:
-				socket_del(s);
-				break;
 			case EINVAL:
 				ws_error(s, 1002);
 				break;
@@ -298,13 +292,11 @@ int websocket_add(int fd)
 {
 	struct ws_data *wsd;
 
-	wsd = calloc(1, sizeof(*wsd));
-	if (!wsd)
-		return -errno;
+	wsd = szalloc(sizeof(*wsd));
 	wsd->s = socket_add(fd, ws_read, wsd, ws_free);
 	if (!wsd->s) {
-		free(wsd);
-		return -ENOMEM;
+		sfree(wsd);
+		return -ENOTSOCK;
 	}
 	wsd->next = websockets;
 	websockets = wsd;

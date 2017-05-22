@@ -68,9 +68,7 @@ struct socket *socket_add(int fd, socket_cb_read_t cb_read, void *cb_data,
 {
 	struct socket *s;
 
-	s = malloc(sizeof(*s));
-	if (!s)
-		return NULL;
+	s = salloc(sizeof(*s));
 	s->refs = 1;
 	s->fd = fd;
 	s->dead = false;
@@ -81,7 +79,7 @@ struct socket *socket_add(int fd, socket_cb_read_t cb_read, void *cb_data,
 	s->cb_destructor = cb_destructor;
 	s->wqueue = NULL;
 	if (event_add_fd(fd, EV_SOCK | EV_READ, socket_cb, s, socket_kill) < 0) {
-		free(s);
+		sfree(s);
 		return NULL;
 	}
 	return s;
@@ -154,7 +152,7 @@ void socket_unref(struct socket *s)
 			s->cb_destructor(s->cb_data);
 		if (s->should_close)
 			close(s->fd);
-		free(s);
+		sfree(s);
 	}
 }
 
@@ -198,15 +196,13 @@ size_t socket_read(struct socket *s, void *buf, size_t size)
 	return socket_read_ancil(s, buf, size, NULL, &ancil_size);
 }
 
-static int socket_queue_data(struct socket *s, void *buf, size_t size,
-			     void *ancil_buf, size_t ancil_size,
-			     int fd_to_close)
+static void socket_queue_data(struct socket *s, void *buf, size_t size,
+			      void *ancil_buf, size_t ancil_size,
+			      int fd_to_close)
 {
 	struct msg *m, **ptr;
 
-	m = malloc(sizeof(*m));
-	if (!m)
-		return -errno;
+	m = salloc(sizeof(*m));
 	m->buf = buf;
 	m->size = size;
 	m->start = 0;
@@ -218,7 +214,6 @@ static int socket_queue_data(struct socket *s, void *buf, size_t size,
 	for (ptr = &s->wqueue; *ptr; ptr = &(*ptr)->next)
 		;
 	*ptr = m;
-	return 0;
 }
 
 int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
@@ -231,9 +226,9 @@ int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
 
 	if (s->dead) {
 		if (steal)
-			free(buf);
+			sfree(buf);
 		if (ancil_steal)
-			free(ancil_buf);
+			sfree(ancil_buf);
 		return 0;
 	}
 
@@ -244,33 +239,18 @@ int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
 	if (steal)
 		copied = buf;
 	else {
-		copied = malloc(size);
-		if (!copied)
-			return -errno;
+		copied = salloc(size);
 		memcpy(copied, buf, size);
 	}
 	if (!ancil_buf || ancil_steal) {
 		ancil_copied = ancil_buf;
 	} else {
-		ancil_copied = malloc(ancil_size);
-		if (!ancil_copied) {
-			ret = -errno;
-			goto error;
-		}
+		ancil_copied = salloc(ancil_size);
 		memcpy(ancil_copied, ancil_buf, ancil_size);
 	}
 
-	ret = socket_queue_data(s, copied, size, ancil_copied, ancil_size, fd_to_close);
-	if (ret < 0)
-		goto error;
-	return ret;
-
-error:
-	if (!steal)
-		free(copied);
-	if (!ancil_steal && ancil_copied)
-		free(ancil_copied);
-	return ret;
+	socket_queue_data(s, copied, size, ancil_copied, ancil_size, fd_to_close);
+	return 0;
 }
 
 int socket_write(struct socket *s, void *buf, size_t size, bool steal)
@@ -302,7 +282,7 @@ static void socket_process_wqueue(struct socket *s)
 			return;
 		if (written != 0) {
 			if (m->ancil_buf) {
-				free(m->ancil_buf);
+				sfree(m->ancil_buf);
 				m->ancil_buf = NULL;
 				m->ancil_size = 0;
 			}
@@ -313,8 +293,8 @@ static void socket_process_wqueue(struct socket *s)
 		}
 		if (written < 0 || (size_t)written == m->size) {
 			s->wqueue = m->next;
-			free(m->buf);
-			free(m);
+			sfree(m->buf);
+			sfree(m);
 		} else {
 			m->size -= written;
 			m->start += written;
@@ -379,9 +359,7 @@ int socket_listen(unsigned port, socket_cb_new_t cb_new,
 	struct sockaddr_in6 sin6;
 	int tmp;
 
-	ldata = malloc(sizeof(*ldata));
-	if (!ldata)
-		return -errno;
+	ldata = salloc(sizeof(*ldata));
 	ldata->port = port;
 	ldata->cb_new = cb_new;
 	ldata->cb_read = cb_read;
@@ -389,7 +367,7 @@ int socket_listen(unsigned port, socket_cb_new_t cb_new,
 
 	fd = socket(AF_INET6, SOCK_STREAM, 0);
 	if (fd < 0) {
-		free(ldata);
+		sfree(ldata);
 		return -errno;
 	}
 	if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
@@ -413,7 +391,7 @@ int socket_listen(unsigned port, socket_cb_new_t cb_new,
 		goto error;
 
 	if (!socket_add(fd, socket_accept, ldata, free)) {
-		errno = -ENOMEM;
+		errno = -EBADF;
 		goto error;
 	}
 
@@ -423,6 +401,6 @@ error: ;
 	int ret = errno;
 
 	close(fd);
-	free(ldata);
+	sfree(ldata);
 	return -ret;
 }

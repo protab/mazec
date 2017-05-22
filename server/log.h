@@ -10,7 +10,7 @@ enum {
 	__LOG_LEVEL_MAX
 };
 
-int log_init(const char *name);
+void log_init(const char *name);
 int log_msg(int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 void log_raw(char *buf, size_t size);
 

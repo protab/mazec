@@ -12,8 +12,8 @@
 static void init_master(int argc, char **argv)
 {
 	check(event_init());
-	check(log_init("<master>"));
-	check(spawn_init(argc, argv));
+	log_init("<master>");
+	spawn_init(argc, argv);
 	check(db_reload());
 	check(websocket_http_init(WEBSOCKET_PORT));
 }
@@ -32,7 +32,7 @@ static void ws_debug(struct socket *s, void *buf, size_t len)
 static void init_child(int argc __unused, char **argv)
 {
 	check(event_init());
-	check(log_init(argv[1]));
+	log_init(argv[1]);
 	check(ipc_client_init());
 	websocket_init(ws_debug, event_quit);
 }

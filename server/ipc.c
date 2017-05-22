@@ -81,7 +81,7 @@ int ipc_client_init(void)
 
 	s = socket_add(2, pipe_read, NULL, NULL);
 	if (!s)
-		return -ENOMEM;
+		return -ENOTSOCK;
 	/* We never close fd 2. */
 	socket_set_unmanaged(s);
 
@@ -100,16 +100,14 @@ int ipc_send_fd(struct socket *s, int fd, int type)
 	int ret;
 
 	len = CMSG_LEN(sizeof(int));
-	cmsg = malloc(len);
-	if (!cmsg)
-		return -errno;
+	cmsg = salloc(len);
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
 	cmsg->cmsg_len = len;
 	memcpy(CMSG_DATA(cmsg), &fd, sizeof(int));
 	ret = socket_write_ancil(s, &type, sizeof(int), false, cmsg, len, true, fd);
 	if (ret < 0) {
-		free(cmsg);
+		sfree(cmsg);
 		return ret;
 	}
 	return 0;

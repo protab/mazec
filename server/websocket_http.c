@@ -221,9 +221,7 @@ static int process_value(struct ws_http_data *wsd)
 	} else if (!strcasecmp(wsd->field, "sec-websocket-key")) {
 		if (wsd->key)
 			return -EEXIST;
-		wsd->key = strdup(wsd->buf);
-		if (!wsd->key)
-			return -ENOMEM;
+		wsd->key = sstrdup(wsd->buf);
 	}
 	wsd->process = process_field;
 	wsd->token_end = ':';
@@ -250,9 +248,7 @@ static int process_http_ver(struct ws_http_data *wsd)
 
 static int process_path(struct ws_http_data *wsd)
 {
-	wsd->path = strdup(wsd->buf);
-	if (!wsd->path)
-		return -ENOMEM;
+	wsd->path = sstrdup(wsd->buf);
 	wsd->process = process_http_ver;
 	wsd->token_end = 'N';
 	return 0;
@@ -271,7 +267,7 @@ static void ws_report_error(struct ws_http_data *wsd, int err)
 	char *msg;
 
 	log_warn("websocket handshake error (%d) on fd %d", err, socket_get_fd(wsd->s));
-	if (err == -ENOMEM) {
+	if (err == -ENOTSOCK) {
 		/* just close the socket */
 		socket_del(wsd->s);
 		return;
@@ -354,14 +350,14 @@ static int ws_headers_processed(struct ws_http_data *wsd)
 	check(socket_stop_reading(wsd->s));
 
 	if (socket_write(wsd->s, ws_response1, sizeof(ws_response1) - 1, false) < 0)
-		return -ENOMEM;
+		return -ENOTSOCK;
 	key = construct_accept_key(wsd->key, &key_len);
 	if (!key)
-		return -ENOMEM;
+		return -EINVAL;
 	if (socket_write(wsd->s, key, key_len, true) < 0)
-		return -ENOMEM;
+		return -ENOTSOCK;
 	if (socket_write(wsd->s, ws_response2, sizeof(ws_response2) - 1, false) < 0)
-		return -ENOMEM;
+		return -ENOTSOCK;
 	socket_set_write_done_cb(wsd->s, ws_headers_sent);
 	return 0;
 }
@@ -395,9 +391,7 @@ static void *ws_new(struct socket *s)
 {
 	struct ws_http_data *wsd;
 
-	wsd = calloc(1, sizeof(*wsd));
-	if (!wsd)
-		return NULL;
+	wsd = szalloc(sizeof(*wsd));
 	wsd->s = s;
 	wsd->process = process_method;
 	wsd->token_end = ' ';
@@ -409,10 +403,10 @@ static void ws_free(void *data)
 	struct ws_http_data *wsd = data;
 
 	if (wsd->path)
-		free(wsd->path);
+		sfree(wsd->path);
 	if (wsd->key)
-		free(wsd->key);
-	free(wsd);
+		sfree(wsd->key);
+	sfree(wsd);
 }
 
 int websocket_http_init(unsigned port)

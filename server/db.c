@@ -111,11 +111,7 @@ int db_reload(void)
 			if (u) {
 				log_warn("duplicate login %s (db %s)", login, DB_PATH);
 			} else {
-				u = malloc(sizeof(*u));
-				if (!u) {
-					fclose(f);
-					return -ENOMEM;
-				}
+				u = salloc(sizeof(*u));
 				strcpy(u->login, login);
 				u->pid = 0;
 				u->pipe = NULL;
