@@ -33,13 +33,13 @@ LEVL <string>		Povinně druhá odeslaná zpráva klientem. Vybírá level
 WAIT			Čekám na spuštění přes frontend (->DONE nebo OVER).
 			Selže při timeoutu.
 
-GETW <int>		Dotaz na šířku (->DATA). Je zaručeno, že tato
+GETW			Dotaz na šířku (->DATA). Je zaručeno, že tato
 			hodnota se v průběhu nebude měnit.
-GETH <int>		Dotaz na výšku (->DATA). Je zaručeno, že tato
+GETH			Dotaz na výšku (->DATA). Je zaručeno, že tato
 			hodnota se v průběhu nebude měnit.
-GETX <int>		Dotaz na X hráče (->DATA). Levý horní roh je X = 0,
+GETX			Dotaz na X hráče (->DATA). Levý horní roh je X = 0,
 			Y = 0.
-GETY <int>		Dotaz na Y hráče (->DATA)
+GETY			Dotaz na Y hráče (->DATA)
 WHAT <int> <int>	Dotaz na barvu na políčku (->DATA nebo OVER, pokud je
 			mimo rozsah 0-W, 0-H)
 MAZE			Vrať barvy všech políček (->DATA). Políčka jsou
