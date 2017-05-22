@@ -1,7 +1,7 @@
 Protokol je přes TCP, textový. Ve zprávách se server a klient vždy střídají,
 protokol je v zásadě primitivní RPC. Iniciátor komunikace je klient.
 
-Pro daného uživatele lze najednou procházet pouze jeden level.
+Pro daného uživatele lze najednou procházet pouze jednu úlohu.
 
 První čtyři znaky každé zprávy je příkaz, zbytek jsou volitelné parametry.
 Celá zpráva je kódována v ASCII. Zpráva je ukončena newlinem. Server
@@ -25,9 +25,9 @@ A přijímá tyto:
 USER <string>		Povinně první zpráva protokolu. Přihlašuje uživatele.
 			(->DONE nebo OVER). Může selhat na neexistenci
 			uživatele.
-LEVL <string>		Povinně druhá odeslaná zpráva klientem. Vybírá level
+LEVL <string>		Povinně druhá odeslaná zpráva klientem. Vybírá úlohu
 			přes kódové jméno (->DONE nebo OVER). Může selhat na
-			neexistenci levelu nebo na příliš mnoho otevřených
+			neexistenci úlohy nebo na příliš mnoho otevřených
 			spojení.
 WAIT			Čekám na spuštění přes frontend (->DONE nebo OVER).
 			Selže při timeoutu.
@@ -101,7 +101,7 @@ fakt potřeboval nějaký pokročilý error handling, může použít longjmp
 
 Knihovny musí umožňovat odeslání ručné sestrojené zprávy, na kterou vrátí
 syrovou odpověď. Měly by exportovat svoje funkce, kterými ošetřují chyby (OVER)
-a přečtou zprávu DATA. V pozdějších levelech tedy můžeme nějakou funkcionalitu
+a přečtou zprávu DATA. V pozdějších úlohách tedy můžeme nějakou funkcionalitu
 přidat (zatím to není v plánu). Pokud je to možné, měly by "normální" API volání
 být jednoduché abstrakce, jejichž zdroják nebude utopený v síťovém kódu (tj.
 třeba v header file). Příklad:
