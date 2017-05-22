@@ -40,13 +40,13 @@ static int socket_cb(int fd, unsigned events, void *data)
 {
 	struct socket *s = data;
 
+	if (events & EV_READ)
+		s->cb_read(s, s->cb_data);
 	if (events & EV_ERROR) {
 		log_info("socket %d was closed by the other side", fd);
 		socket_del(s);
 		return 0;
 	}
-	if (events & EV_READ)
-		s->cb_read(s, s->cb_data);
 	if (events & EV_WRITE)
 		socket_process_wqueue(s);
 	return 0;
