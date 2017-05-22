@@ -1,41 +1,51 @@
-Protokol je přes TCP, textový. Jedno spojení reprezentuje jeden průchod
-bludištěm.
+Protokol je přes TCP, textový. Ve zprávách se server a klient vždy střídají,
+protokol je v zásadě primitivní RPC. Iniciátor komunikace je klient.
 
-Ve zprávách se server a klient vždy střídají, protokol je v zásadě primitivní
-RPC. Iniciátor komunikace je klient.
+Pro daného uživatele lze najednou procházet pouze jeden level. Pokud daný
+level umožňuje více spojení najednou, další spojení lze navázat až poté, co
+server potvrdil zprávu LEVL u prvního spojení.
 
-Zpráva protokolu je dlouhá maximálně 1500 bajtů, a musí přijít v jednom paketu.
+První čtyři znaky každé zprávy je příkaz, zbytek jsou volitelná data. Celá
+zpráva je kódována v ASCII. Zpráva je ukončena newlinem. Server rozeznává LF
+i CRLF a vrací odpověď zakončenou stejným způsobem jako byl požadavek.
 
-První čtyři znaky jsou hlavička, zbytek jsou volitelná data. Celá zpráva je
-kódována v ASCII.
+Server odesílá následující zprávy:
 
-Server odesílá následujícími zprávami:
-
-DONE			Očekávám další příkaz. (-> LEVL, GET*, WHAT, MOVE)
-DATA <int>		Odpověď s daty (-> GET*, WHAT, MOVE)
-NOPE			Server akci záměrně neprovedl.
+DONE			Očekávám další zprávu. (-> LEVL, GET*, WHAT, MOVE)
+DATA <int> [<int>...]	Odpověď s daty (-> GET*, WHAT, MAZE, MOVE). Pouze
+			MAZE vrací více než jeden <int>.
+NOPE <string>		Server akci záměrně neprovedl. Obsahuje důvod.
+			Spojení není ukončeno, klient může poslat další
+			zprávu.
 OVER <string>		Hra končí, server ukončuje spojení. Došlo k chybě nebo
 			k vítězství. Obsahuje zprávu, kterou je vhodné si
 			přečíst.
 
 A přijímá tyto:
 
-USER <string>		Povinně první příkaz protokolu. Přihlašuje uživatele.
+USER <string>		Povinně první zpráva protokolu. Přihlašuje uživatele.
 			(->DONE nebo OVER). Může selhat na neexistenci
-			uživatele / chybějící prostředky / už běžící session
-			pro tohoto uživatele.
-LEVL <string>		Povinně druhý příkaz protokolu. Vybírá level přes
-			kódové jméno. (->DONE nebo OVER) Může selhat na
-			404 nebo 403 :)
+			uživatele.
+LEVL <string>		Povinně druhá odeslaná zpráva klientem. Vybírá level
+			přes kódové jméno (->DONE nebo OVER). Může selhat na
+			neexistenci levelu.
 WAIT			Čekám na spuštění přes frontend (->DONE nebo OVER).
 			Selže při timeoutu.
 
-GETW <int>		Dotaz na šířku (->DATA)
-GETH <int>		Dotaz na výšku (->DATA)
-GETX <int>		Dotaz na X hráče (->DATA)
+GETW <int>		Dotaz na šířku (->DATA). Je zaručeno, že tato
+			hodnota se v průběhu nebude měnit.
+GETH <int>		Dotaz na výšku (->DATA). Je zaručeno, že tato
+			hodnota se v průběhu nebude měnit.
+GETX <int>		Dotaz na X hráče (->DATA). Levý horní roh je X = 0,
+			Y = 0.
 GETY <int>		Dotaz na Y hráče (->DATA)
 WHAT <int> <int>	Dotaz na barvu na políčku (->DATA nebo OVER, pokud je
 			mimo rozsah 0-W, 0-H)
+MAZE			Vrať barvy všech políček (->DATA). Políčka jsou
+			vrácena jako jednorozměrný seznam postupně po
+			řádcích počínaje levým horním rohem. Pro
+			interpretaci je tedy potřeba se zeptat na šířku
+			a výšku.
 MOVE <char>		Pohybový (zatím) příkaz (->DONE nebo NOPE, pokud pohyb
 			nelze provést, OVER pokud dojde k vítězství/prohře)
 
@@ -82,12 +92,15 @@ dva režimy fungování:
 2) Vše si dělám sám, po inicializaci knihovny volám RPC cally, chyby řeším
    ručně.
 
-Kdykoli server odpoví OVER, knihovny vyhodí výjjimku. V případě Cčka váhám,
-jestli vracet chybu (tj. ale get_width(&width)), nebo chybu vypsat a natvrdo
-program ukončit (tj. nekonzistence v jejich případných datech).
+Kdykoli server odpoví OVER, knihovny vyhodí výjimku. V případě Cčka bude
+možnost zaregistrovat si funkci jako error handler. Pokud nastane
+chyba, je zavolána tato funkce; pokud se funkce vrátí nebo není definována,
+program bude ukončen s vypsáním chybové hlášky na stderr. Pokud by někdo
+fakt potřeboval nějaký pokročilý error handling, může použít longjmp
+(knihovna s tím tedy musí počítat).
 
 Knihovny musí umožňovat odeslání ručné sestrojené zprávy, na kterou vrátí
-syrovou odpověď. Měli by exportovat svoje funkce, kterými ošetřují chyby (OVER)
+syrovou odpověď. Měly by exportovat svoje funkce, kterými ošetřují chyby (OVER)
 a přečtou zprávu DATA. V pozdějších levelech tedy můžeme nějakou funkcionalitu
 přidat (zatím to není v plánu). Pokud je to možné, měly by "normální" API volání
 být jednoduché abstrakce, jejichž zdroják nebude utopený v síťovém kódu (tj.
@@ -103,4 +116,6 @@ int maze_what(unsigned x, unsigned y) {
 }
 
 Knihovna by měla fungovat vícekrát za běh programu. Mělo by být možné jedním
-spojením mapu prozkoumat, druhým projít.
+spojením mapu prozkoumat, druhým projít. Také by knihovny měly umožnit mít
+více spojení najednou, tj. nepoužívat globální proměnné, ale stav si držet
+v nějakém objektu.
