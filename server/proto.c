@@ -42,7 +42,7 @@ static int p_count;
 static int p_bound_count;
 static int p_bound_max;
 static char *p_code;
-static const struct app_ops *p_level;
+static const struct level_ops *p_level;
 
 /* Deletes the socket if send fails. */
 static int p_send_msg(struct p_data *pd, char *cmd, char *data)

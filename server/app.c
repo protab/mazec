@@ -22,7 +22,7 @@ static char *x_get(int *res)
 	return NULL;
 }
 
-static const struct app_ops ops = {
+static const struct level_ops ops = {
 	.max_conn = 2,
 	.move = x_move,
 	.what = x_what,
@@ -32,7 +32,7 @@ static const struct app_ops ops = {
 	.get_h = x_get,
 };
 
-const struct app_ops *app_get_level(char *code __unused)
+const struct level_ops *app_get_level(char *code __unused)
 {
 	return &ops;
 }
