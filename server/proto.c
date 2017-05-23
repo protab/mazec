@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include "app.h"
 #include "common.h"
+#include "config.h"
 #include "db.h"
 #include "ipc.h"
 #include "log.h"

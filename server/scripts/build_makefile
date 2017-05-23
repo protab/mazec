@@ -1,0 +1,10 @@
+#!/bin/bash
+cp Makefile.t Makefile
+list=
+for f in *.c; do
+	code=$(sed -n 's/^#define[ \t]\+CODE[ \t]\+"\([^"]*\).*/\1/p' "$f")
+	[[ -z $code ]] && continue
+	list="$list $code.so"
+	echo "$code.so: ${f%.c}.o"
+done >> Makefile
+echo "all2:$list" >> Makefile

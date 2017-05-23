@@ -1,2 +1,4 @@
 *.o
 mazec
+levels/*.so
+levels/Makefile

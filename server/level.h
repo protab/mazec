@@ -4,7 +4,8 @@
 
 struct level_ops {
 	int max_conn;
-	void *(*get_data)();
+	void (*init)(void);
+	void *(*get_data)(void);
 	void (*free_data)(void *data);
 
 	char *(*move)(char c, bool *win);

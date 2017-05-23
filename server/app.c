@@ -1,38 +1,37 @@
 #include "app.h"
-#include <stdbool.h>
+#include <dlfcn.h>
+#include <string.h>
+#include "config.h"
 #include "common.h"
+#include "log.h"
 
-/* test code only */
+#define MAX_PATH_LEN	(sizeof(LEVELS_DIR) + LOGIN_LEN + 3)
 
-static char *x_move(char c __unused, bool *win)
+const struct level_ops *app_get_level(char *code)
 {
-	*win = false;
-	return "Zdi vsude okolo.";
-}
+	char path[MAX_PATH_LEN];
+	size_t pos;
+	void *handle;
+	char *err;
+	struct level_ops *ops;
 
-static char *x_what(int x __unused, int y __unused, int *res)
-{
-	*res = 0;
-	return NULL;
-}
-
-static char *x_get(int *res)
-{
-	*res = 0;
-	return NULL;
-}
-
-static const struct level_ops ops = {
-	.max_conn = 2,
-	.move = x_move,
-	.what = x_what,
-	.get_x = x_get,
-	.get_y = x_get,
-	.get_w = x_get,
-	.get_h = x_get,
-};
-
-const struct level_ops *app_get_level(char *code __unused)
-{
-	return &ops;
+	pos = strlcpy(path, LEVELS_DIR, MAX_PATH_LEN);
+	pos += strlcpy(path + pos, code, MAX_PATH_LEN - pos);
+	pos += strlcpy(path + pos, ".so", MAX_PATH_LEN - pos);
+	handle = dlopen(path, RTLD_NOW);
+	if (!handle)
+		return NULL;
+	dlerror();
+	ops = dlsym(handle, "level_ops");
+	err = dlerror();
+	if (err || !ops) {
+		if (!err)
+			err = "the symbol is NULL";
+		log_err("import error from library %s: %s", path, err);
+		dlclose(handle);
+		return NULL;
+	}
+	if (ops->init)
+		ops->init();
+	return ops;
 }
