@@ -17,8 +17,6 @@
 #define P_MSG_CHAR_EXPECTED	"Tento prikaz ocekava jako parametr jeden znak."
 #define P_MSG_2INT_EXPECTED	"Tento prikaz ocekava jako parametr dve nezaporna cisla."
 #define P_MSG_EXTRA_PARAM	"Tento prikaz se vola bez parametru."
-
-#define A_MSG_MOVE_NOT_AVAIL	"V teto uloze se nelze pohybovat."
-#define A_MSG_MAZE_NOT_AVAIL	"V teto uloze nelze ziskat data o celem bludisti. Pouzij prikaz WHAT."
+#define P_MSG_MAZE_NOT_AVAIL	"V teto uloze nelze ziskat data o celem bludisti. Pouzij prikaz WHAT."
 
 #endif

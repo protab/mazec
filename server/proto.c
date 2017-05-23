@@ -100,12 +100,24 @@ static int p_send_data(struct p_data *pd, int *data, int len)
 	return ret;
 }
 
+static void p_report_and_close(struct p_data *pd, char *cmd, char *msg)
+{
+	check(socket_stop_reading(pd->s));
+	p_send_msg(pd, cmd, msg);
+	socket_flush_and_del(pd->s);
+}
+
 static void p_report_error(struct p_data *pd, char *msg)
 {
 	log_info("closing app socket fd %d due to protocol error", socket_get_fd(pd->s));
-	check(socket_stop_reading(pd->s));
-	p_send_msg(pd, "OVER", msg);
-	socket_flush_and_del(pd->s);
+	p_report_and_close(pd, "OVER", msg);
+}
+
+static void p_report_win(struct p_data *pd, char *msg)
+{
+	log_info("winner, closing app socket fd %d", socket_get_fd(pd->s));
+	p_report_and_close(pd, "OVER", msg);
+	// TODO: store to database
 }
 
 static char *process_msg_chunk(struct p_data *pd, char *buf, size_t count)
@@ -223,14 +235,16 @@ static char *process_cmd(struct p_data *pd)
 	char *nope = NULL;
 
 	if (!strcmp(pd->cmd, "MOVE")) {
+		bool win = false;
+
 		if (pd->val_len != 1)
 			return P_MSG_CHAR_EXPECTED;
-		if (!p_level->move) {
-			nope = A_MSG_MOVE_NOT_AVAIL;
-		} else {
-			nope = p_level->move(pd->val[0]);
-			if (!nope)
-				p_send_ack(pd);
+		nope = p_level->move(pd->val[0], &win);
+		if (!nope)
+			p_send_ack(pd);
+		if (win) {
+			p_report_win(pd, nope);
+			return NULL;
 		}
 	} else if (!strcmp(pd->cmd, "WHAT")) {
 		int x, y, res;
@@ -241,17 +255,15 @@ static char *process_cmd(struct p_data *pd)
 		if (!nope)
 			p_send_data(pd, &res, 1);
 	} else if (!strcmp(pd->cmd, "MAZE")) {
+		int *res, len;
+
 		if (pd->is_val)
 			return P_MSG_EXTRA_PARAM;
-		if (!p_level->maze) {
-			nope = A_MSG_MAZE_NOT_AVAIL;
-		} else {
-			int *res, len;
-
-			nope = p_level->maze(&res, &len);
-			if (!nope)
-				p_send_data(pd, res, len);
-		}
+		if (!p_level->maze)
+			return P_MSG_MAZE_NOT_AVAIL;
+		nope = p_level->maze(&res, &len);
+		if (!nope)
+			p_send_data(pd, res, len);
 	} else if (!strcmp(pd->cmd, "GETX")) {
 		int res;
 

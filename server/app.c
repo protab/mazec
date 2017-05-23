@@ -1,7 +1,14 @@
 #include "app.h"
+#include <stdbool.h>
 #include "common.h"
 
 /* test code only */
+
+static char *x_move(char c __unused, bool *win)
+{
+	*win = false;
+	return "Zdi vsude okolo.";
+}
 
 static char *x_what(int x __unused, int y __unused, int *res)
 {
@@ -17,6 +24,7 @@ static char *x_get(int *res)
 
 static const struct app_ops ops = {
 	.max_conn = 2,
+	.move = x_move,
 	.what = x_what,
 	.get_x = x_get,
 	.get_y = x_get,
