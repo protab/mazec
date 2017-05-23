@@ -1,5 +1,22 @@
-canvas {
-    width: 100%;
-    height: 100%;
-    margin: 0;
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+  font-family: monospace;
+}
+
+footer {
+  margin-left: 5px;
+  vertical-align: middle;
+  font-size: 20px;
+  position: fixed;
+  left: 0px;
+  bottom: 0px;
+  height: 30px;
+  width: 100%;
+}
+
+#connection_button {
+  margin-right: 10px;
 }

@@ -6,11 +6,7 @@
         <meta name="description" content="Kreslitko na hru">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <link rel="stylesheet" href="css/normalize.css">
-        <link rel="stylesheet" href="css/main.css">
-        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
-
-        <style src="style.css"></style>
+        <link rel="stylesheet" href="style.css"/>
         <script src="script.js"></script>
     </head>
     <body onload="init()">
@@ -19,5 +15,9 @@
         <![endif]-->
 
         <canvas id="canvas"></canvas>
+        <footer>
+            <span id="connection_status_msg"></span>
+            <button id='connection_control' onclick='onConnectionButtonClick()'></button>
+        </footer>
     </body>
 </html>
