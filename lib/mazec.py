@@ -233,24 +233,26 @@ class MazecConnection(LineRPCConnection):
 
 
 
-"""Priklad pouziti tridy **MazecConnection**"""
 
-with MazecConnection() as mc:
-    mc.user('jmeno')
-    mc.level('nejlehci')
-    mc.wait()
-    mc.get_height()
-    mc.get_width()
-    mc.get_player_x()
-    mc.get_player_y()
-    mc.get_tile_value(5, 10)
-    mc.get_all_tile_values()
-    mc.move(Mazec.UP)
-    mc.command('ZATANCUJ')
+if __name__ == "__main__":
+    """Priklad pouziti tridy **MazecConnection**"""
 
-"""Priklad pouziti Mazec.run"""
+    with MazecConnection() as mc:
+        mc.user('jmeno')
+        mc.level('nejlehci')
+        mc.wait()
+        mc.get_height()
+        mc.get_width()
+        mc.get_player_x()
+        mc.get_player_y()
+        mc.get_tile_value(5, 10)
+        mc.get_all_tile_values()
+        mc.move(Mazec.UP)
+        mc.command('ZATANCUJ')
 
-def main(mc: MazecConnection, move_result: str):
-    return Mazec.UP
+    """Priklad pouziti Mazec.run"""
 
-Mazec.run('jmeno', 'level', main)
+    def main(mc: MazecConnection, move_result: str):
+        return Mazec.UP
+
+    Mazec.run('jmeno', 'level', main)
