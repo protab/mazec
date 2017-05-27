@@ -83,7 +83,7 @@ class MazecConnection(LineRPCConnection):
             raise MazecException(resp[len('OVER '):])
         else:
             # nedefinovana odpoved, ukoncujeme spojeni
-            raise MazecException('Neocekavana odpoved serveru: {}'.format)
+            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def command(self, cmd) -> str:
         """ Posle serveru libovolny textovy prikaz, vrati textovou odpoved serveru"""
@@ -197,6 +197,8 @@ class MazecConnection(LineRPCConnection):
         resp = self.command('MOVE {}'.format(direction))
         if resp == 'DONE':
             return None
+        elif resp.startswith('NOPE '):
+            return resp[len('NOPE '):]
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
@@ -204,16 +206,21 @@ class Mazec(MazecConnection):
     """
     Herni konstanty a správa hry
     """
+
+    """Nahoru"""
     UP = 'W'
+    """Dolu"""
     DOWN = 'S'
+    """Doleva"""
     LEFT = 'A'
+    """Doprava"""
     RIGHT = 'D'
 
     def __init__(self, username: str, level: str):
         super().__init__()
         self._username = username
         self._level = level
-        
+
         """Šířka hracího pole"""
         self.width = -1
         """Výška hracího pole"""
@@ -228,6 +235,8 @@ class Mazec(MazecConnection):
         super().wait()
         self.height = super().get_height()
         self.width = super().get_width()
+
+        return self
 
     def get_all_values(self) -> List[List[int]]:
         """
