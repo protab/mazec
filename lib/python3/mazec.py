@@ -1,33 +1,9 @@
 import socket
 import types
+from typing import List
 
-
-class Mazec(object):
-    """
-    Herni konstanty a správa hry
-    """
-
-    SERVER_DOMAIN = 'localhost'
-    SERVER_PORT = 1234
-    UP = 'W'
-    DOWN = 'S'
-    LEFT = 'A'
-    RIGHT = 'D'
-
-    @staticmethod
-    def run(username: str, level: str, loop: types.FunctionType):
-        """
-        Metoda implementujici zakladni pohybovy cyklus
-        """
-
-        move_result = None
-        with MazecConnection() as mc:
-            mc.user(username)
-            mc.level(level)
-            mc.wait()
-            while True:
-                move_result = mc.move(loop(mc, move_result))
-
+SERVER_DOMAIN = 'localhost'
+SERVER_PORT = 1234
 
 class LineRPCConnection(object):
     """
@@ -73,14 +49,6 @@ class LineRPCConnection(object):
             data += self.socket.recv(buffsize)
         return data.decode('ascii')[:-1]
 
-    def send_and_recv_msg(self, msg) -> str:
-        """
-        Posle prikaz serveru a vrati jeho textovou odpoved.
-        """
-
-        self.send_msg(msg)
-        return self.recv_msg()
-
 
 class MazecException(Exception):
     pass
@@ -91,14 +59,14 @@ class MazecConnection(LineRPCConnection):
     """
 
     def __init__(self):
-        super(MazecConnection, self).__init__()
+        super().__init__()
 
     def __enter__(self):
-        super(MazecConnection, self).open(Mazec.SERVER_DOMAIN, Mazec.SERVER_PORT)
+        super().open(SERVER_DOMAIN, SERVER_PORT)
         return self
 
     def __exit__(self, typ, value, traceback):
-        super(MazecConnection, self).close()
+        super().close()
 
     def __handle_response__(self, resp):
         if resp == 'DONE':
@@ -120,7 +88,8 @@ class MazecConnection(LineRPCConnection):
     def command(self, cmd) -> str:
         """ Posle serveru libovolny textovy prikaz, vrati textovou odpoved serveru"""
 
-        resp = super(MazecConnection, self).send_and_recv_msg(cmd)
+        super().send_msg(cmd)
+        resp = super().recv_msg()
         self.__handle_response__(resp)
         return resp
 
@@ -169,7 +138,7 @@ class MazecConnection(LineRPCConnection):
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
-    def get_player_x(self) -> int:
+    def get_x(self) -> int:
         """
         Vraci x souradnici polohy hrace
         """
@@ -181,7 +150,7 @@ class MazecConnection(LineRPCConnection):
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
-    def get_player_y(self) -> int:
+    def get_y(self) -> int:
         """
         Vraci y souradnici polohy hrace
         """
@@ -193,7 +162,7 @@ class MazecConnection(LineRPCConnection):
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
-    def get_tile_value(self, x: int, y: int) -> int:
+    def get_value(self, x: int, y: int) -> int:
         """
         Vraci hodnotu policka se souradnicemi x,y
         """
@@ -205,7 +174,7 @@ class MazecConnection(LineRPCConnection):
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
-    def get_all_tile_values(self):
+    def get_all_values(self):
         """
         Vrací hodnoty všech policek mapy
         """
@@ -231,28 +200,77 @@ class MazecConnection(LineRPCConnection):
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
+class Mazec(MazecConnection):
+    """
+    Herni konstanty a správa hry
+    """
+    UP = 'W'
+    DOWN = 'S'
+    LEFT = 'A'
+    RIGHT = 'D'
 
+    def __init__(self, username: str, level: str):
+        super().__init__()
+        self._username = username
+        self._level = level
+        
+        """Šířka hracího pole"""
+        self.width = -1
+        """Výška hracího pole"""
+        self.height = -1
+        """Text chybové hlášky z posledního pohybu."""
+        self.error = None
 
+    def __enter__(self):
+        super().__enter__()
+        super().user(self._username)
+        super().level(self._level)
+        super().wait()
+        self.height = super().get_height()
+        self.width = super().get_width()
 
-if __name__ == "__main__":
-    """Priklad pouziti tridy **MazecConnection**"""
+    def get_all_values(self) -> List[List[int]]:
+        """
+        Vrátí všechny hodnoty hracího pole. Jedná se o pole sloupců hodnot.
+        Tzn. přístup na hodnotu pole x,y probíhá takto:
 
-    with MazecConnection() as mc:
-        mc.user('jmeno')
-        mc.level('nejlehci')
-        mc.wait()
-        mc.get_height()
-        mc.get_width()
-        mc.get_player_x()
-        mc.get_player_y()
-        mc.get_tile_value(5, 10)
-        mc.get_all_tile_values()
-        mc.move(Mazec.UP)
-        mc.command('ZATANCUJ')
+        hodnota = mapa[x][y]
+        """
 
-    """Priklad pouziti Mazec.run"""
+        values = super().get_all_values()
+        res = [[] for x in range(self.width)]
+        for i, v in enumerate(values):
+            res[i % self.width].append(v)
+        return res
 
-    def main(mc: MazecConnection, move_result: str):
-        return Mazec.UP
+    def move(self, direction: str) -> bool:
+        """
+        Pohybová metoda, přijímá hodnoty:
 
-    Mazec.run('jmeno', 'level', main)
+        Mazec.UP
+        Mazec.DOWN
+        Mazec.LEFT
+        Mazec.RIGHT
+
+        Návratovou hodnotou je `True` v případě úspěchu, `False` v případě neúspěchu.
+        Případné chybové hlášky se ukládají do proměnné `error`.
+        """
+
+        r = super().move(direction)
+        self.error = r
+        return not r
+
+    @staticmethod
+    def run(username: str, level: str, loop: types.FunctionType):
+        """
+        Funkce implementujici zakladni pohybovy cyklus.
+
+        Jako poslední parametr přijímá funkci, jejíž návratovou hodnotou
+        by měl být směr dalšího kroku. Tato funkce je volána stále dokola,
+        dokud není hra ukončena chybou či úspěchem.
+        """
+
+        success = True
+        with Mazec(username, level) as m:
+            while True:
+                success = m.move(loop(m, success, m.error))
