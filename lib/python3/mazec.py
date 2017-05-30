@@ -53,22 +53,45 @@ class LineRPCConnection(object):
 class MazecException(Exception):
     pass
 
-class MazecConnection(LineRPCConnection):
+class Mazec(LineRPCConnection):
     """
-    Trida implementujici zakladni funkce protokolu na komunikaci s hernim serverem
+    Sprava a ovladani hry
     """
 
-    def __init__(self):
+    """Nahoru"""
+    UP = 'W'
+    """Dolu"""
+    DOWN = 'S'
+    """Doleva"""
+    LEFT = 'A'
+    """Doprava"""
+    RIGHT = 'D'
+
+    def __init__(self, username: str, level: str):
         super().__init__()
+
+        self._username = username
+        self._level_name = level
+        """Vyska hraciho pole"""
+        self.height = -1
+        """Sirka hraciho pole"""
+        self.width = -1
+        """Chybova hlaska posledniho pokusu o pohyb"""
+        self.error = None
 
     def __enter__(self):
         super().open(SERVER_DOMAIN, SERVER_PORT)
+        self._user(self._username)
+        self._level(self._level_name)
+        self._wait()
+        self.height = self._get_height()
+        self.width = self._get_width()
         return self
 
     def __exit__(self, typ, value, traceback):
         super().close()
 
-    def __handle_response__(self, resp):
+    def _handle_response(self, resp):
         if resp == 'DONE':
             # vse je v poradku
             return
@@ -85,65 +108,88 @@ class MazecConnection(LineRPCConnection):
             # nedefinovana odpoved, ukoncujeme spojeni
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
-    def command(self, cmd) -> str:
+    def _command(self, cmd) -> str:
         """ Posle serveru libovolny textovy prikaz, vrati textovou odpoved serveru"""
 
         super().send_msg(cmd)
         resp = super().recv_msg()
-        self.__handle_response__(resp)
+        self._handle_response(resp)
         return resp
 
-    def user(self, username: str):
+    def _user(self, username: str):
         """
         Povinne prvni prikaz spojeni, prihlasi hrace dle jmena
         """
 
-        self.command('USER {}'.format(username))
+        self._command('USER {}'.format(username))
 
-    def level(self, level_name: str):
+    def _level(self, level_name: str):
         """
         Povinne druhy prikaz spojeni, vybere aktualni LEVEL
         """
 
-        self.command('LEVL {}'.format(level_name))
+        self._command('LEVL {}'.format(level_name))
 
-    def wait(self):
+    def _wait(self):
         """
         Ceka na pripojeni vykreslovatka
         """
 
-        self.command('WAIT')
+        self._command('WAIT')
 
-    def get_width(self) -> int:
+    def _get_width(self) -> int:
         """
         Vraci sirku hraciho pole
         """
 
-        resp = self.command('GETW')
+        resp = self._command('GETW')
         if resp.startswith('DATA '):
             width = int(resp[len('DATA '):])
             return width
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
-    def get_height(self) -> int:
+    def _get_height(self) -> int:
         """
         Vraci vysku hraciho pole
         """
 
-        resp = self.command('GETH')
+        resp = self._command('GETH')
         if resp.startswith('DATA '):
             height = int(resp[len('DATA '):])
             return height
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
 
-    def get_x(self) -> int:
+    def _get_list_of_all_values(self) -> List[int]:
+        resp = self._command('MAZE')
+        if resp.startswith('DATA '):
+            maze = [int(x) for x in resp[len('DATA '):].split(' ')]
+            return maze
+        else:
+            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+
+    def _move_command(self, direction) -> str:
         """
-        Vraci x souradnici polohy hrace
+        Posun, prijima parametry 'w' , 's' ,'a', 'd' jako smer.
+
+        Vraci None, pokud probehlo uspesne. Jinak textove vysvetleni, proc pohyb nelze provest.
         """
 
-        resp = self.command('GETX')
+        resp = self._command('MOVE {}'.format(direction))
+        if resp == 'DONE':
+            return None
+        elif resp.startswith('NOPE '):
+            return resp[len('NOPE '):]
+        else:
+            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+
+    def get_x(self) -> int:
+        """
+        Vraci x souradnici polohy
+        """
+
+        resp = self._command('GETX')
         if resp.startswith('DATA '):
             x = int(resp[len('DATA '):])
             return x
@@ -152,10 +198,10 @@ class MazecConnection(LineRPCConnection):
 
     def get_y(self) -> int:
         """
-        Vraci y souradnici polohy hrace
+        Vraci y souradnici polohy
         """
 
-        resp = self.command('GETY')
+        resp = self._command('GETY')
         if resp.startswith('DATA '):
             y = int(resp[len('DATA '):])
             return y
@@ -167,76 +213,12 @@ class MazecConnection(LineRPCConnection):
         Vraci hodnotu policka se souradnicemi x,y
         """
 
-        resp = self.command('WHAT {} {}'.format(x, y))
+        resp = self._command('WHAT {} {}'.format(x, y))
         if resp.startswith('DATA '):
             value = int(resp[len('DATA '):])
             return value
         else:
             raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
-
-    def get_all_values(self):
-        """
-        Vrací hodnoty všech policek mapy
-        """
-
-        resp = self.command('MAZE')
-        if resp.startswith('DATA '):
-            maze = [int(x) for x in resp[len('DATA '):].split(' ')]
-            return maze
-        else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
-
-
-    def move(self, direction) -> str:
-        """
-        Posun, prijima parametry 'w' , 's' ,'a', 'd' jako smer.
-
-        Vraci None, pokud probehlo uspesne. Jinak textove vysvetleni, proc pohyb nelze provest.
-        """
-
-        resp = self.command('MOVE {}'.format(direction))
-        if resp == 'DONE':
-            return None
-        elif resp.startswith('NOPE '):
-            return resp[len('NOPE '):]
-        else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
-
-class Mazec(MazecConnection):
-    """
-    Herni konstanty a správa hry
-    """
-
-    """Nahoru"""
-    UP = 'W'
-    """Dolu"""
-    DOWN = 'S'
-    """Doleva"""
-    LEFT = 'A'
-    """Doprava"""
-    RIGHT = 'D'
-
-    def __init__(self, username: str, level: str):
-        super().__init__()
-        self._username = username
-        self._level = level
-
-        """Šířka hracího pole"""
-        self.width = -1
-        """Výška hracího pole"""
-        self.height = -1
-        """Text chybové hlášky z posledního pohybu."""
-        self.error = None
-
-    def __enter__(self):
-        super().__enter__()
-        super().user(self._username)
-        super().level(self._level)
-        super().wait()
-        self.height = super().get_height()
-        self.width = super().get_width()
-
-        return self
 
     def get_all_values(self) -> List[List[int]]:
         """
@@ -246,7 +228,7 @@ class Mazec(MazecConnection):
         hodnota = mapa[x][y]
         """
 
-        values = super().get_all_values()
+        values = self._get_list_of_all_values()
         res = [[] for x in range(self.width)]
         for i, v in enumerate(values):
             res[i % self.width].append(v)
@@ -265,7 +247,7 @@ class Mazec(MazecConnection):
         Případné chybové hlášky se ukládají do proměnné `error`.
         """
 
-        r = super().move(direction)
+        r = self._move_command(direction)
         self.error = r
         return not r
 
