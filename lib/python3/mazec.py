@@ -79,16 +79,27 @@ class Mazec(object):
         """Chybova hlaska posledniho pokusu o pohyb"""
         self.error = None
 
+        self.open()
+
     def __enter__(self):
+        return self
+
+    def __exit__(self, typ, value, traceback):
+        self.close()
+
+    def open(self):
+        """ Otevře nové spojení se serverem """
+
         self._connection.open(SERVER_DOMAIN, SERVER_PORT)
         self._user(self._username)
         self._level(self._level_name)
         self._wait()
         self.height = self._get_height()
         self.width = self._get_width()
-        return self
 
-    def __exit__(self, typ, value, traceback):
+    def close(self):
+        """Ukončí spojení se serverem"""
+
         self._connection.close()
 
     def _handle_response(self, resp):

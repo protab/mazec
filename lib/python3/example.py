@@ -1,6 +1,6 @@
 from mazec import Mazec
 
-"""Priklad pouziti vlastniho cyklu"""
+"""Priklad pouziti vlastniho cyklu a with"""
 
 with Mazec('jmeno', 'level') as m:
     m.height   # vyska levelu
@@ -16,6 +16,14 @@ with Mazec('jmeno', 'level') as m:
     success = m.move(Mazec.UP)  # pokus o pohyb, vraci uspech nebo neuspech
     if not success:
         print(m.error)          # v pripade neuspechu je toto chybova hlaska
+
+
+""" Priklad pouziti vlastniho cyklu bez with """
+
+m = Mazec("username", "level")      # Otevře spojení se serverem
+m.height
+m.get_y()
+m.close()                           # Uzavře spojení se serverem
 
 
 """
