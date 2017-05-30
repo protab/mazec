@@ -53,7 +53,7 @@ class LineRPCConnection(object):
 class MazecException(Exception):
     pass
 
-class Mazec(LineRPCConnection):
+class Mazec(object):
     """
     Sprava a ovladani hry
     """
@@ -68,7 +68,7 @@ class Mazec(LineRPCConnection):
     RIGHT = 'D'
 
     def __init__(self, username: str, level: str):
-        super().__init__()
+        self._connection = LineRPCConnection()
 
         self._username = username
         self._level_name = level
@@ -80,7 +80,7 @@ class Mazec(LineRPCConnection):
         self.error = None
 
     def __enter__(self):
-        super().open(SERVER_DOMAIN, SERVER_PORT)
+        self._connection.open(SERVER_DOMAIN, SERVER_PORT)
         self._user(self._username)
         self._level(self._level_name)
         self._wait()
@@ -89,7 +89,7 @@ class Mazec(LineRPCConnection):
         return self
 
     def __exit__(self, typ, value, traceback):
-        super().close()
+        self._connection.close()
 
     def _handle_response(self, resp):
         if resp == 'DONE':
@@ -111,8 +111,8 @@ class Mazec(LineRPCConnection):
     def _command(self, cmd) -> str:
         """ Posle serveru libovolny textovy prikaz, vrati textovou odpoved serveru"""
 
-        super().send_msg(cmd)
-        resp = super().recv_msg()
+        self._connection.send_msg(cmd)
+        resp = self._connection.recv_msg()
         self._handle_response(resp)
         return resp
 
