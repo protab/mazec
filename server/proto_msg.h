@@ -8,7 +8,7 @@
 #define P_MSG_CMD_EXTRA_CHARS	"Zprava musi zacinat prikazem, ktery ma presne 4 znaky. Za temito znaky musi nasledovat mezera nebo konec radku."
 #define P_MSG_CMD_UNKNOWN	"Neznamy prikaz."
 #define P_MSG_VAL_CONTAINS_NULL	"Zprava obsahuje znak \\0. Tento znak neni ve zprave povoleny."
-#define P_MSG_VAL_TOO_LONG	"Zprava je prilis dlouha. Nezapomnel jsi nekde znak konce radku?"
+#define P_MSG_VAL_TOO_LONG	"Zprava je prilis dlouha. Nechybi ti nekde znak konce radku?"
 #define P_MSG_USER_EXPECTED	"Komunikace musi zacit prikazem USER."
 #define P_MSG_USER_UNKNOWN	"Tento uzivatel neexistuje."
 #define P_MSG_LEVL_EXPECTED	"Druhy prikaz komunikace musi byt LEVL."
