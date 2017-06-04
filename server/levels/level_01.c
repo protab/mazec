@@ -35,6 +35,7 @@ static char *get(int *res)
 
 const struct level_ops level_ops = {
 	.max_conn = 2,
+	.max_time = 10,
 	.get_data = get_data,
 	.free_data = free_data,
 	.move = move,

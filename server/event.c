@@ -293,8 +293,7 @@ int timer_arm(int fd, int milisecs)
 	struct itimerspec its;
 
 	memset(&its, 0, sizeof(its));
-	its.it_value.tv_sec = milisecs / 1000;
-	its.it_value.tv_nsec = (long)(milisecs % 1000) * 1000000;
+	time_add(&its.it_value, milisecs);
 	if (timerfd_settime(fd, 0, &its, NULL) < 0)
 		return -errno;
 	return 0;

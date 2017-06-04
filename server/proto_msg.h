@@ -14,6 +14,7 @@
 #define P_MSG_LEVL_EXPECTED	"Druhy prikaz komunikace musi byt LEVL."
 #define P_MSG_LEVL_NOT_MATCHING	"Jiz bezi spojeni pro jinou ulohu. Nelze resit dve ulohy najednou."
 #define P_MSG_LEVL_UNKNOWN	"Uloha s timto kodem neexistuje."
+#define P_MSG_TIMEOUT		"Vyprsel cas pro reseni teto ulohy."
 #define P_MSG_CHAR_EXPECTED	"Tento prikaz ocekava jako parametr jeden znak."
 #define P_MSG_2INT_EXPECTED	"Tento prikaz ocekava jako parametr dve nezaporna cisla."
 #define P_MSG_EXTRA_PARAM	"Tento prikaz se vola bez parametru."

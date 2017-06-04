@@ -4,6 +4,7 @@
 
 struct level_ops {
 	int max_conn;
+	int max_time; /* in seconds */
 	void (*init)(void);
 	void *(*get_data)(void);
 	void (*free_data)(void *data);

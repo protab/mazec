@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include "app.h"
 #include "common.h"
@@ -42,6 +43,8 @@ static proto_close_cb_t p_close_cb;
 static int p_count;
 static int p_bound_count;
 static int p_bound_max;
+static bool p_end_set;
+static struct timespec p_end;
 static char *p_code;
 static const struct level_ops *p_level;
 
@@ -235,6 +238,8 @@ static char *process_cmd(struct p_data *pd)
 {
 	char *nope = NULL;
 
+	if (p_end_set && time_after(&p_end))
+		return P_MSG_TIMEOUT;
 	if (!strcmp(pd->cmd, "MOVE")) {
 		bool win = false;
 
@@ -327,6 +332,10 @@ static char *process_level(struct p_data *pd)
 			return P_MSG_LEVL_UNKNOWN;
 		p_code = sstrdup(pd->val);
 		p_bound_max = p_level->max_conn;
+		if (p_level->max_time) {
+			time_add(time_now(&p_end), p_level->max_time * 1000);
+			p_end_set = true;
+		}
 	}
 	if (p_level->get_data)
 		pd->data = p_level->get_data();
@@ -378,6 +387,7 @@ void proto_client_init(proto_close_cb_t close_cb)
 	p_count = 0;
 	p_bound_count = 0;
 	p_bound_max = 1;
+	p_end_set = false;
 	p_code = NULL;
 }
 
