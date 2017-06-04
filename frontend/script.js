@@ -29,14 +29,20 @@ function getTileCoords(i, header) {
     return [x,y]
 }
 
+function handleButtonsAndClock(header) {
+    document.getElementById('time_left').innerHTML = header.time_left.toString();
+    document.getElementById('button_start').style.display = header.button_start ? 'block' : 'none';
+    document.getElementById('button_end').style.display = header.button_start ? 'block' : 'none';
+}
+
 function render(map) {
     globalState['map'] = map;
 
     var canvas = document.getElementById('canvas');
     var context = canvas.getContext('2d');
 
-    //var w = canvas.width = 495;
-    //var h = canvas.height = 495;
+    var w = canvas.width = 495;
+    var h = canvas.height = 495;
 
     if (isConnectionClosed()) {
       context.clearRect(0, 0, w, h);
@@ -197,6 +203,15 @@ function init() {
 
     setConnectionStatusMsg('Navazování spojení...')
     reloadConnectionButtonText();
+}
+
+function buttonPress(id) {
+    if (isConnectionClosed()) return;
+    var socket = globalState['socket']
+    var payload = new ArrayBuffer(1);
+    var view = new Uint8Array(payload);
+    view[0] = id;
+    socket.send(payload)
 }
 
 function isConnectionClosed() {

@@ -7,14 +7,15 @@ body {
 }
 
 footer {
-  margin-left: 5px;
-  vertical-align: middle;
+  padding-left: 5px;
   font-size: 20px;
   position: fixed;
   left: 0px;
   bottom: 0px;
-  height: 30px;
   width: 100%;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  border-top: 3px solid black;
 }
 
 #connection_button {
@@ -22,6 +23,7 @@ footer {
 }
 
 #canvas {
+  margin-top: 5px;
   width: 495px;
   height: 495px;
   border: 3px solid black;
@@ -29,6 +31,30 @@ footer {
 
 .canvas-container {
     width: 512px;
-    margin-right: auto;
-    margin-left: auto;
+}
+
+.center {
+  display: block;
+  text-align: center;
+  position: relative;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.gbutton {
+  width: 501px;
+  font-size: 20px;
+  font-family: monospace;
+  color: black;
+  box-shadow: 2px 2px 0 0 lightgray;
+  margin-top: 5px;
+  background: lightgray;
+  border: 3px solid black;
+}
+
+.clock {
+  font-family: monospace;
+  font-size: 20px;
+  margin-top: 1em;
+  color: black;
 }
