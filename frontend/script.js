@@ -80,7 +80,7 @@ function rerender() {
 
 function loadAndSaveAllSprites() {
     globalState.images = []
-    for (var i = 0; i < 0x1f; i++) {
+    for (var i = 0; i <= 0x1f; i++) {
         var img = new Image()
         var id = ('0' + i.toString());
         id = id.substr(id.length - 2);
