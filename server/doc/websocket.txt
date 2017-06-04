@@ -1,0 +1,153 @@
+Zprávy jsou přenášeny jako binární data. Doporučený typ pro zpracování na
+straně klienta je ArrayBuffer (ws.binaryType = "arraybuffer").
+
+Herní plocha je 525 x 525 pixelů. Zobrazen je však vždy jen výřez
+o velikosti 495 x 495 pixelů. Souřadnice [0, 0] odpovídají levému hornímu
+rohu herní plochy (ne výřezu!). Pozice výřezu v rámci herní plochy je
+sdělena serverem v každé zprávě.
+
+Každá zpráva od serveru kóduje kompletní hrací plochu. Je tedy možné vždy
+kompletně zahodit předchozí stav a kreslit znovu. (Pokud se ukáže, že to má
+příliš velké požadavky na přenosovu kapacitu sítě, bude protokol popsaný
+níže rozšířen. K tomu budou využity rezervované bity.)
+
+Formát zprávy od serveru
+------------------------
+
+Každá zpráva začíná tříbajtovou hlavičkou (bajty jsou v pořadí odshora
+dolů):
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |     y_ofs     |     x_ofs     |
+  +---+---+---+---+---+---+---+---+
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |sec hi | R | R | R | R |b2 |b1 |
+  +---+---+---+---+---+---+---+---+
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |            sec lo             |
+  +---+---+---+---+---+---+---+---+
+
+Souřadnice levého horního rohu výřezu jsou [x_ofs + 15, y_ofs + 15].
+Velikost výřezu je vždy 495 x 495 pixelů.
+
+"sec" udává počet vteřin do konce úlohy. Jde o 10bitovou hodnotu, jejích
+8 dolních bitů je v "sec lo", její 2 horní bity jsou v "sec hi".
+
+Je-li hodnota "sec" rovna 0x3ff, znamená to, že úloha nemá žádný časový
+limit.
+
+"b1" a "b2" požaduje zobrazení tlačítek. "b1" je tlačítko s názvem "Start",
+"b2" je tlačítko s názvem "Ukončit". Je-li příslušný bit nastaven, je
+tlačítko zobrazeno, není-li nastaven, není zobrazeno.
+
+Bity "R" jsou rezervované a příjemce je může ignorovat. Příjemce nesmí
+předpokládat, že rezervované bity mají hodnotu 0. (To platí i pro všechna
+"R" dále v tomto dokumentu.)
+
+
+Po hlavičce následuje popis 1156 políček (tj. 34 x 34 políček). Popis je
+zkomprimován jednoduchou RLE kompresí. Každé políčko má velikost 15 x 15
+pixelů. První řádek a první sloupce herní plochy nejsou v popise obsaženy (a
+jsou zcela ignorovány pro účely RLE komprese).
+
+Znamená to tedy, že první popsané políčko má souřadnice svého levého horního
+rohu [15, 15], druhé [30, 15], atd. Políčka jsou popsána postupně po
+řádcích.
+
+Formát popisu jednoho políčka je následující:
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |rle| R | R |     sprite        |
+  +---+---+---+---+---+---+---+---+
+
+"sprite" udává číslo obrázku, který se má zobrazit na souřadnicích políčka.
+Obrázek má velikost 15 x 15 pixelů a lze ho získat z URL
+http://protab./static/img/2017/sprite%02d.png. Obrázek č. 0 je černý čtverec
+a lze to o něm předpokládat. Je tedy možné na začátku smazat herní plochu
+a pro sprite č. 0 prostě dané políčko přeskočit.
+
+Není-li nastavent bit "rle", následuje popis dalšího políčka. Je-li bit
+"rle" nastaven, následuje ještě jeden bajt:
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |         repeat_count          |
+  +---+---+---+---+---+---+---+---+
+
+Hodnota "repeat_count" udává, kolikrát se má dané políčko zopakovat. Pro
+získání počtu opakování je k ní nejprve potřeba přičíst číslo 3.
+
+Příklad: není-li nastaven bit "rle", je dané políčko vykresleno jednou.
+Je-li nastaven bit "rle" a následující bajt má hodnotu 2, je dané políčko
+vykresleno pětkrát.
+
+Opakování může být i přes řádky. Pokud při vykreslování dojdeme na konec
+řádku (tj. vykreslíme políčko s x-ovou souřadnicí 510, ale stále ještě není
+vyčerpán počet opakování), pokračuje se vykreslováním na dalším řádku na
+x-ové souřadnici 15.
+
+Po popisu všech 1156 políček (tj. po vykreslení políčka na souřadnicích
+[510, 510]) následuje popis nula nebo více volných elementů.
+
+Popis každého volného elementu má 3 až 4 bajty:
+
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |yhi|xhi|rot|     sprite        |
+  +---+---+---+---+---+---+---+---+
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |              x lo             |
+  +---+---+---+---+---+---+---+---+
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |              y lo             |
+  +---+---+---+---+---+---+---+---+
+
+"x" a "y" jsou souřadnice, na které se má element vykreslit. Každá
+souřadnice má 9 bitů. Souřadnice udávají polohu levého horního rohu obrázku,
+pokud obrázek není orotován.
+
+"sprite" znamená totéž, co u popisu políček.
+
+Pozor na to, že obrázek může být nutné před vykreslením otočit. Otočení je
+nutné provést se středem rotace ve středu obrázku. Střed obrázku se pak
+vykreslí na souřadnice [x + 7, y + 7] (všimněte si, že tato věta platí,
+i když obrázek otočen není).
+
+Je-li nastaven bit "rot", následuje ještě jeden bajt:
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  | R |         angle             |
+  +---+---+---+---+---+---+---+---+
+
+"angle" udává úhel otočení obrázku v krocích po 3°. Skutečný úhel otočení
+obrázku ve stupních lze tedy spočítat jako (angle * 3). Otáčení probíhá
+proti směru hodinových ručiček.
+
+
+Formát zprávy od klienta
+------------------------
+
+Zpráva od klienta má jediný bajt:
+
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  | 0 | R | R | R | R |   button  |
+  +---+---+---+---+---+---+---+---+
+
+Nejvyšší bit je nastaven na 0. Rezervované bity nastaví klient také na 0.
+
+"button" je číslo tlačítka, které bylo zmáčknuto. Bylo-li to tlačítko "b1",
+je hodnota "button" rovna 1. Bylo-li to "b2", je hodnota "button" rovna 2,
+atd.
