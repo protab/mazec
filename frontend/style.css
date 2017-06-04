@@ -20,3 +20,15 @@ footer {
 #connection_button {
   margin-right: 10px;
 }
+
+#canvas {
+  width: 495px;
+  height: 495px;
+  border: 3px solid black;
+}
+
+.canvas-container {
+    width: 512px;
+    margin-right: auto;
+    margin-left: auto;
+}

@@ -1,8 +1,11 @@
+var DEBUG = true;
+
 /**
  *  Tyto hodnoty pod stejnými názvy:
  *      username
  *      socket
  *      map
+ *      images
  */
 var globalState = {};
 
@@ -20,14 +23,11 @@ function getUsername() {
 
 /**************************** RENDERING ***************************************/
 
-function resizeCanvas() {
-    var canvas = document.getElementById('canvas');
-    canvas.height = window.innerHeight - 30;
-    canvas.width = window.innerWidth;
-    canvas.style.width = window.innerWidth.toString()+'px';
-    canvas.style.height = (window.innerHeight - 30).toString()+'px';
+function getTileCoords(i, header) {
+    var x = (i % 34)*15 + 15 + header.x_ofs;
+    var y = Math.floor(i / 34)*15 + 15 + header.y_ofs;
+    return [x,y]
 }
-window.addEventListener('load', resizeCanvas);
 
 function render(map) {
     globalState['map'] = map;
@@ -35,21 +35,36 @@ function render(map) {
     var canvas = document.getElementById('canvas');
     var context = canvas.getContext('2d');
 
-    var w = canvas.width;
-    var h = canvas.height;
+    //var w = canvas.width = 495;
+    //var h = canvas.height = 495;
 
     if (isConnectionClosed()) {
       context.clearRect(0, 0, w, h);
       context.font = "30px monospace"
-      context.strokeText("...", w/2-45, h/2-15);
+      context.strokeText("...", w/2-30, h/2-15);
       return;
-    };
+    }
 
-    context.fillStyle = '#' + ('00000'+(Math.random()*(1<<24)|0).toString(16)).slice(-6); // random color
-    context.fillRect(0, 0, w, h);
+    // draw tiles
+    for (var i in map.tiles) {
+        var coords = getTileCoords(i);
+        context.drawImage(globalState.images[map.tiles[i]], coords[0], coords[1])
+    }
 
+    // draw floating tiles
+    for (var i in map.floating_tiles) {
+        var x = map.floating_tiles[i].x;
+        var y = map.floating_tiles[i].y;
+        var width = globalState.images[map.floating_tiles[i].sprite].width;
+        var height = globalState.images[map.floating_tiles[i].sprite].height;
+        var angle = map.floating_tiles[i].rotation * Math.PI / 180;
 
-    // TODO render map
+        context.translate(x, y);
+        context.rotate(angle);
+        context.drawImage(image, -width / 2, -height / 2, width, height);
+        context.rotate(-angle);
+        context.translate(-x, -y);
+    }
 }
 
 function rerender() {
@@ -57,13 +72,17 @@ function rerender() {
     render(map);
 }
 
-function resizeCanvasAndRerender() {
-  resizeCanvas();
-  rerender();
+function loadAndSaveAllSprites() {
+    globalState.images = []
+    for (var i = 0; i < 0x1f; i++) {
+        var img = new Image()
+        var id = ('0' + i.toString());
+        id = id.substr(id.length - 2);
+        img.src = 'http://protab./static/img/2017/sprite' + id + '.png'
+        globalState.images[i] = img;
+    }
 }
-window.addEventListener('resize', resizeCanvasAndRerender);
-
-
+window.addEventListener('load', loadAndSaveAllSprites)
 
 /*************************** CONNECTION MANAGEMENT ****************************/
 
@@ -73,6 +92,7 @@ function setConnectionStatusMsg(msg) {
 
 function init() {
     var socket = new WebSocket('ws://protab:1234/' + getUsername());
+    socket.binaryType = "arraybuffer";
 
     socket.onopen = function() {
         console.log('Connection opened...');
@@ -81,11 +101,88 @@ function init() {
     };
 
     socket.onmessage = function(event){
-        var data = event.data;
-        console.log(data);
+        if (!data instanceof ArrayBuffer) {
+            console.error('Prijata data nejsou typu ArrayBuffer');
+            return;
+        }
 
-        // TODO process data
-        var map = {};
+        if(DEBUG) {
+            console.log('Prijata data:')
+            console.log(event.data);
+        }
+
+        var data = new Uint8Array(data)
+    
+        // HEADER
+        var header = {
+            y_ofs: (data[0] & 0xf0 >>> 4) + 15,
+            x_ofs: (data[0] & 0x0f) + 15,
+            button_start: data[1] & 0x01 > 0,
+            button_end: data[1] & 0x02 > 0,
+            time_left: data[2] + (data[1] & 0xc0 >>> 6) * 2**8
+        }
+
+        if(DEBUG) {
+            console.log('Header:');
+            console.log(header);
+        }
+
+        // TILES
+
+        var tiles = []
+        var bi = 3;
+
+        var t = 0;
+        var repeat = 1;
+        var sprite = 0;
+        while (tiles.length != 34*34) {
+            t = data[bi++];
+            repeat = ((t & 0x80) > 0) ? data[bi++] : 1;
+            sprite = t & 0x1f;
+
+            for (var i; i < repeat; i++) tiles.push(sprite);
+        }
+        
+        if(DEBUG) {
+            console.log('Tiles:');
+            console.log(tiles);
+        }
+
+        // FLOATING TILES
+        var floating_tiles = []
+        while (bi < data.length) {
+            var x = data[bi+1] + 2**8 * ((data[bi] & 0x80) >>> 7);
+            var y = data[bi+2] + 2**8 * ((data[bi] & 0x40) >>> 6);
+            var rot = data[bi] & 0x20 > 0;
+            var rotation = 0;
+            sprite = data[bi] & 0x1f;
+
+            if (rot) {
+                rotation = data[bi+3]*3;
+                bi += 4;
+            } else {
+                bi += 3;
+            }
+
+            floating_tiles.push({
+                'x': x,
+                'y': y,
+                'rotation': rotation,
+                'sprite': sprite
+            })
+        }
+
+        if(DEBUG) {
+            console.log('Floating tiles:');
+            console.log(floating_tiles);
+        }
+        
+        // finalising data bundle
+        var map = {
+            'tiles': tiles,
+            'floating_tiles': floating_tiles,
+            'header': header
+        };
 
         render(map);
     };
