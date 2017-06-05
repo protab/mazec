@@ -143,7 +143,7 @@ function init() {
         var sprite = 0;
         while (tiles.length != 34*34) {
             t = data[bi++];
-            repeat = ((t & 0x80) > 0) ? data[bi++] : 1;
+            repeat = ((t & 0x80) > 0) ? data[bi++] + 3 : 1;
             sprite = t & 0x1f;
 
             for (var i; i < repeat; i++) tiles.push(sprite);
