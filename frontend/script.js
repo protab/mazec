@@ -24,8 +24,8 @@ function getUsername() {
 /**************************** RENDERING ***************************************/
 
 function getTileCoords(i, header) {
-    var x = (i % 34)*15 + 15 + header.x_ofs;
-    var y = Math.floor(i / 34)*15 + 15 + header.y_ofs;
+    var x = (i % 34)*15 - (header.x_ofs - 15);
+    var y = Math.floor(i / 34)*15 - (header.y_ofs - 15);
     return [x,y]
 }
 
@@ -59,8 +59,8 @@ function render(map) {
 
     // draw floating tiles
     for (var i in map.floating_tiles) {
-        var x = map.floating_tiles[i].x;
-        var y = map.floating_tiles[i].y;
+        var x = map.floating_tiles[i].x + 7 - map.header.x_ofs;
+        var y = map.floating_tiles[i].y + 7 - map.header.y_ofs;
         var width = globalState.images[map.floating_tiles[i].sprite].width;
         var height = globalState.images[map.floating_tiles[i].sprite].height;
         var angle = map.floating_tiles[i].rotation * Math.PI / 180;
