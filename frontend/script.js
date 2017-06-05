@@ -84,7 +84,8 @@ function loadAndSaveAllSprites() {
         var img = new Image()
         var id = ('0' + i.toString());
         id = id.substr(id.length - 2);
-        img.src = 'http://protab./static/img/2017/sprite' + id + '.png'
+        // img.src = 'http://protab./static/img/2017/sprite' + id + '.png'
+        img.src = 'img/sprite' + id + '.png'
         globalState.images[i] = img;
     }
 }
@@ -97,7 +98,8 @@ function setConnectionStatusMsg(msg) {
 }
 
 function init() {
-    var socket = new WebSocket('ws://protab:1234/' + getUsername());
+    var socket = new WebSocket('ws://localhost:1234/' + getUsername());
+    // var socket = new WebSocket('ws://protab.:1234/' + getUsername());
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function() {
