@@ -14,7 +14,7 @@ static unsigned char *level_data, *level_copy;
 static struct simple_data *first;
 
 #define BORDER	5
-static void redraw(void);
+static void update_viewport(void);
 
 void simple_init(int width_, int height_, unsigned char *level,
 		 int start_x_, int start_y_, unsigned priv_size_)
@@ -47,7 +47,8 @@ void *simple_get_data(void)
 	for (ptr = &first; *ptr; ptr = &(*ptr)->next)
 		;
 	*ptr = d;
-	redraw();
+	update_viewport();
+	simple_redraw();
 	return d;
 }
 
@@ -126,7 +127,8 @@ void simple_set_xy(void *data, int x, int y)
 
 	d->x = x;
 	d->y = y;
-	redraw();
+	update_viewport();
+	simple_redraw();
 }
 
 static int find_max(int *data, int len)
@@ -223,13 +225,12 @@ static void update_viewport(void)
 	}
 }
 
-static void redraw(void)
+void simple_redraw(void)
 {
 	int x_max, y_max;
 	int x, y;
 	struct simple_data *d;
 
-	update_viewport();
 	draw_clear();
 
 	x_max = DRAW_MOD_VPORT_WIDTH;

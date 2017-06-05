@@ -64,4 +64,5 @@ const struct level_ops level_ops = {
 	.get_y = simple_get_y,
 	.get_w = simple_get_w,
 	.get_h = simple_get_h,
+	.redraw = simple_redraw,
 };

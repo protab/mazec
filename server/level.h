@@ -57,6 +57,10 @@ struct level_ops {
 	/* Stores the height to '*res'. The height must be constant across
 	 * calls to the function. */
 	char *(*get_h)(void *data, int *res);
+
+	/* Force redraw of the remote screen. Called whenever a new remote
+	 * display is connected. */
+	void (*redraw)(void);
 };
 
 /* Colors (objects). */

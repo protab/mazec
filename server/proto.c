@@ -407,6 +407,7 @@ void proto_client_init(proto_close_cb_t close_cb)
 	p_bound_max = 1;
 	p_end_set = false;
 	p_code = NULL;
+	p_level = NULL;
 }
 
 /* Calls the close callback if there is no app socket open. */
@@ -448,4 +449,10 @@ int proto_client_add(int fd, bool crlf)
 	p_count++;
 
 	return p_send_ack(pd);
+}
+
+void proto_client_redraw(void)
+{
+	if (p_level)
+		p_level->redraw();
 }
