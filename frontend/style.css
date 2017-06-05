@@ -6,31 +6,33 @@ body {
   font-family: monospace;
 }
 
-footer {
-  padding-left: 5px;
-  font-size: 20px;
-  position: fixed;
-  left: 0px;
-  bottom: 0px;
-  width: 100%;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  border-top: 3px solid black;
+.container {
+  margin-top: 4.6vmin;
+  height: 90vmin;
+  width: 90vmin;
+  border: 0.4vmin solid black;
 }
 
-#connection_button {
-  margin-right: 10px;
+.clock { /* 5 */
+  font-family: monospace;
+  font-size: 3vmin;
+  margin-top: 1vmin;
+  margin-bottom: 1vmin;
+  color: black;
 }
 
 #canvas {
-  margin-top: 5px;
-  width: 495px;
-  height: 495px;
-  border: 3px solid black;
-}
+  width: 68.2vmin;
+  height: 68.2vmin;
+  border: 0.4vmin solid black;
 
-.canvas-container {
-    width: 512px;
+  image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
+  image-rendering: -moz-crisp-edges;          /* Firefox                        */
+  image-rendering: -o-crisp-edges;            /* Opera                          */
+  image-rendering: -webkit-optimize-contrast; /* Chrome (and eventually Safari) */
+  image-rendering: pixelated; /* Chrome */
+  image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
+  -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
 }
 
 .center {
@@ -41,20 +43,36 @@ footer {
   margin-left: auto;
 }
 
-.gbutton {
-  width: 501px;
-  font-size: 20px;
+.gbutton { /* 5.8 */
+  width: 69vmin;
+  height: 4vmin;
+  font-size: 3vmin;
   font-family: monospace;
   color: black;
-  box-shadow: 2px 2px 0 0 lightgray;
-  margin-top: 5px;
+  margin-top: 1vmin;
   background: lightgray;
-  border: 3px solid black;
+  border: 0.4vmin solid black;
 }
 
-.clock {
-  font-family: monospace;
-  font-size: 20px;
-  margin-top: 1em;
-  color: black;
+footer { /* 6.4 */
+  margin-top: 1vmin;
+  border-top: 0.4vmin solid black;
+  padding-top: 0.5vmin;
+  height: 3vmin;
+  font-size: 1.5vmin;
+  width: 90vmin;
+
 }
+
+footer > button {
+  height: 3vmin;
+  border: 0.2vmin solid black;
+  font-size: 1.5vmin;
+  font-family: monospace;
+  background: lightgray;
+}
+
+#connection_button {
+  margin-right: 10px;
+}
+

@@ -13,17 +13,19 @@
         <!--[if lt IE 8]>
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
-        <div class="center clock">
-            Zbývá <span id="time_left">0</span> s
+        <div class="container center">
+            <div class="center clock">
+                Zbývá <span id="time_left">0</span> s
+            </div>
+            <div class="center canvas-container">
+                <canvas id="canvas" width="495" height="495"></canvas>
+            </div>
+            <button class="center gbutton" id="button_start" onclick="buttonPress(1)">Start</button>
+            <button class="center gbutton" id="button_end" onclick="buttonPress(2)">Ukončit</button>
+            <footer>
+                <span id="connection_status_msg"></span>
+                <button id='connection_control' onclick='onConnectionButtonClick()'></button>
+            </footer>
         </div>
-        <div class="center canvas-container">
-            <canvas id="canvas" width="495" height="495"></canvas>
-        </div>
-        <button class="center gbutton" id="button_start" onclick="buttonPress(1)">Start</button>
-        <button class="center gbutton" id="button_end" onclick="buttonPress(2)">Ukončit</button>
-        <footer>
-            <span id="connection_status_msg"></span>
-            <button id='connection_control' onclick='onConnectionButtonClick()'></button>
-        </footer>
     </body>
 </html>
