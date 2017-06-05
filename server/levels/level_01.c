@@ -15,19 +15,19 @@ static void free_data(void *data)
 	log_info("ok, freeing");
 }
 
-static char *move(char c __unused, bool *win)
+static char *move(void *data __unused, char c __unused, bool *win)
 {
 	*win = false;
 	return "Zdi vsude okolo.";
 }
 
-static char *what(int x __unused, int y __unused, int *res)
+static char *what(void *data __unused, int x __unused, int y __unused, int *res)
 {
 	*res = 0;
 	return NULL;
 }
 
-static char *get(int *res)
+static char *get(void *data __unused, int *res)
 {
 	*res = 0;
 	return NULL;

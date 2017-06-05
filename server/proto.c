@@ -86,7 +86,7 @@ static int p_send_nope(struct p_data *pd, char *msg)
 	return p_send_msg(pd, "NOPE", msg);
 }
 
-static int p_send_data(struct p_data *pd, int *data, int len)
+static int p_send_data(struct p_data *pd, void *data, int memb_size, unsigned len)
 {
 	char *msg;
 	size_t size, pos = 0;
@@ -94,14 +94,31 @@ static int p_send_data(struct p_data *pd, int *data, int len)
 
 	size = len * 12 + 1;
 	msg = salloc(size);
-	for (int i = 0; i < len; i++) {
-		pos += snprintf(msg + pos, size - pos, " %d", data[i]);
+	for (unsigned i = 0; i < len; i++) {
+		int m;
+
+		switch (memb_size) {
+		case sizeof(int):
+			m = ((int *)data)[i];
+			break;
+		case 1:
+			m = ((unsigned char *)data)[i];
+			break;
+		default:
+			m = 0;
+		}
+		pos += snprintf(msg + pos, size - pos, " %d", m);
 		if (pos >= size)
 			break;
 	}
 	ret = p_send_msg(pd, "DATA", msg + 1);
 	sfree(msg);
 	return ret;
+}
+
+static int p_send_int(struct p_data *pd, int what)
+{
+	return p_send_data(pd, &what, sizeof(int), 1);
 }
 
 static void p_report_and_close(struct p_data *pd, char *cmd, char *msg)
@@ -245,7 +262,7 @@ static char *process_cmd(struct p_data *pd)
 
 		if (pd->val_len != 1)
 			return P_MSG_CHAR_EXPECTED;
-		nope = p_level->move(pd->val[0], &win);
+		nope = p_level->move(pd->data, pd->val[0], &win);
 		if (!nope)
 			p_send_ack(pd);
 		if (win) {
@@ -257,51 +274,52 @@ static char *process_cmd(struct p_data *pd)
 
 		if (!get_2_int(pd->val, &x, &y))
 			return P_MSG_2INT_EXPECTED;
-		nope = p_level->what(x, y, &res);
+		nope = p_level->what(pd->data, x, y, &res);
 		if (!nope)
-			p_send_data(pd, &res, 1);
+			p_send_int(pd, res);
 	} else if (!strcmp(pd->cmd, "MAZE")) {
-		int *res, len;
+		unsigned char *res;
+		unsigned len;
 
 		if (pd->is_val)
 			return P_MSG_EXTRA_PARAM;
 		if (!p_level->maze)
 			return P_MSG_MAZE_NOT_AVAIL;
-		nope = p_level->maze(&res, &len);
+		nope = p_level->maze(pd->data, &res, &len);
 		if (!nope)
-			p_send_data(pd, res, len);
+			p_send_data(pd, res, 1, len);
 	} else if (!strcmp(pd->cmd, "GETX")) {
 		int res;
 
 		if (pd->is_val)
 			return P_MSG_EXTRA_PARAM;
-		nope = p_level->get_x(&res);
+		nope = p_level->get_x(pd->data, &res);
 		if (!nope)
-			p_send_data(pd, &res, 1);
+			p_send_int(pd, res);
 	} else if (!strcmp(pd->cmd, "GETY")) {
 		int res;
 
 		if (pd->is_val)
 			return P_MSG_EXTRA_PARAM;
-		nope = p_level->get_y(&res);
+		nope = p_level->get_y(pd->data, &res);
 		if (!nope)
-			p_send_data(pd, &res, 1);
+			p_send_int(pd, res);
 	} else if (!strcmp(pd->cmd, "GETW")) {
 		int res;
 
 		if (pd->is_val)
 			return P_MSG_EXTRA_PARAM;
-		nope = p_level->get_w(&res);
+		nope = p_level->get_w(pd->data, &res);
 		if (!nope)
-			p_send_data(pd, &res, 1);
+			p_send_int(pd, res);
 	} else if (!strcmp(pd->cmd, "GETH")) {
 		int res;
 
 		if (pd->is_val)
 			return P_MSG_EXTRA_PARAM;
-		nope = p_level->get_h(&res);
+		nope = p_level->get_h(pd->data, &res);
 		if (!nope)
-			p_send_data(pd, &res, 1);
+			p_send_int(pd, res);
 	} else if (!strcmp(pd->cmd, "WAIT")) {
 		if (pd->is_val)
 			return P_MSG_EXTRA_PARAM;
