@@ -195,7 +195,7 @@ function init() {
     socket.onclose = function(event) {
         setConnectionStatusMsg('Nepřipojeno');
         reloadConnectionButtonText();
-        render();
+        render(); // FIXME: chybi parametr
     };
 
     globalState['socket'] = socket;
