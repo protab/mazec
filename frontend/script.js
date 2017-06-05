@@ -107,7 +107,7 @@ function init() {
     };
 
     socket.onmessage = function(event){
-        if (!data instanceof ArrayBuffer) {
+        if (!event.data instanceof ArrayBuffer) {
             console.error('Prijata data nejsou typu ArrayBuffer');
             return;
         }
@@ -117,7 +117,7 @@ function init() {
             console.log(event.data);
         }
 
-        var data = new Uint8Array(data)
+        var data = new Uint8Array(event.data)
     
         // HEADER
         var header = {
