@@ -1,10 +1,12 @@
 #!/bin/bash
 cp Makefile.t Makefile
 list=
-for f in *.c; do
+for f in level_*.c; do
 	code=$(sed -n 's/^#define[ \t]\+CODE[ \t]\+"\([^"]*\).*/\1/p' "$f")
 	[[ -z $code ]] && continue
 	list="$list $code.so"
-	echo "$code.so: ${f%.c}.o"
+
+	objs=($(sed -n 's/^#include "\([^.]*\)\.h".*/\1.o/p' "$f"))
+	echo "$code.so: ${f%.c}.o" "${objs[@]}"
 done >> Makefile
 echo "all2:$list" >> Makefile

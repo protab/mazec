@@ -20,4 +20,6 @@
 #define P_MSG_EXTRA_PARAM	"Tento prikaz se vola bez parametru."
 #define P_MSG_MAZE_NOT_AVAIL	"V teto uloze nelze ziskat data o celem bludisti. Pouzij prikaz WHAT."
 
+#define A_MSG_OUT_OF_MAZE	"Pozadovane souradnice se nachazi mimo hraci plochu."
+
 #endif

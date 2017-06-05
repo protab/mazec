@@ -1,47 +1,67 @@
-#include "../common.h"
+#include <stdbool.h>
+#include <stdlib.h>
 #include "../level.h"
-#include "../log.h"
+#include "simple.h"
 
 #define CODE "test"
 
-static void *get_data(void)
+#define WIDTH	5
+#define HEIGHT	6
+
+static unsigned char level[WIDTH * HEIGHT] = {
+	2, 2, 2, 2, 2,
+	2, 0, 0, 0, 2,
+	2, 0, 0, 0, 2,
+	2, 0, 0, 0, 2,
+	2, 0, 0, 0, 2,
+	2, 2, 2, 2, 2,
+};
+
+static void init(void)
 {
-	return salloc(1);
+	simple_init(WIDTH, HEIGHT, level, 2, 2, sizeof(struct simple_data));
 }
 
-static void free_data(void *data)
+static char *move(void *data, char c, bool *win)
 {
-	sfree(data);
-	log_info("ok, freeing");
-}
+	struct simple_data *d = data;
+	int sx = 0, sy = 0;
 
-static char *move(void *data __unused, char c __unused, bool *win)
-{
 	*win = false;
-	return "Zdi vsude okolo.";
-}
 
-static char *what(void *data __unused, int x __unused, int y __unused, int *res)
-{
-	*res = 0;
-	return NULL;
-}
-
-static char *get(void *data __unused, int *res)
-{
-	*res = 0;
+	switch (c) {
+	case 'w':
+		sy = -1;
+		break;
+	case 's':
+		sy = 1;
+		break;
+	case 'a':
+		sx = -1;
+		break;
+	case 'd':
+		sx = 1;
+		break;
+	default:
+		return "Neznamy smer pohybu.";
+	}
+	if (level[((d->y + sy) * WIDTH) + (d->x + sx)])
+		return "Tim smerem je zed.";
+	simple_set_xy(data, d->x + sx, d->y + sy);
 	return NULL;
 }
 
 const struct level_ops level_ops = {
 	.max_conn = 2,
-	.max_time = 10,
-	.get_data = get_data,
-	.free_data = free_data,
+	.max_time = 0,
+	.init = init,
+	.get_data = simple_get_data,
+	.free_data = simple_free_data,
 	.move = move,
-	.what = what,
-	.get_x = get,
-	.get_y = get,
-	.get_w = get,
-	.get_h = get,
+	.what = simple_what,
+	.maze = simple_maze,
+	.get_x = simple_get_x,
+	.get_y = simple_get_y,
+	.get_w = simple_get_w,
+	.get_h = simple_get_h,
 };

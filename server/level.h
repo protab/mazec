@@ -59,4 +59,11 @@ struct level_ops {
 	char *(*get_h)(void *data, int *res);
 };
 
+/* Colors (objects). */
+enum {
+	COLOR_NONE,
+	COLOR_PLAYER,
+	COLOR_WALL,
+};
+
 #endif
