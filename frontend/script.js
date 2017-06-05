@@ -53,7 +53,7 @@ function render(map) {
 
     // draw tiles
     for (var i in map.tiles) {
-        var coords = getTileCoords(i);
+        var coords = getTileCoords(i, map.header);
         context.drawImage(globalState.images[map.tiles[i]], coords[0], coords[1])
     }
 
