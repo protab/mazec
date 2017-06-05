@@ -1,7 +1,7 @@
 CFLAGS = -W -Wall -Wno-unused-result -g -std=gnu99 -D_GNU_SOURCE
 LDFLAGS = -rdynamic -ldl
 
-OBJS = app.o common.o base64.o db.o event.o ipc.o log.o main.o proto.o \
+OBJS = app.o common.o base64.o db.o draw.o event.o ipc.o log.o main.o proto.o \
        sha1.o socket.o spawn.o websocket_data.o websocket_http.o
 
 all: mazec build_levels
