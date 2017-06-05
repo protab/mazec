@@ -1,5 +1,6 @@
 #include "common.h"
 #include "db.h"
+#include "draw.h"
 #include "event.h"
 #include "ipc.h"
 #include "log.h"
@@ -39,6 +40,7 @@ static void init_child(int argc __unused, char **argv)
 	check(ipc_client_init());
 	proto_client_init(event_quit);
 	websocket_init(ws_debug, proto_cond_close);
+	draw_init();
 }
 
 int main(int argc, char **argv)
