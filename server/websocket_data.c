@@ -161,13 +161,13 @@ static int consume_message(struct ws_data *wsd)
 		reassembly_message(wsd);
 		break;
 	case OP_TEXT:
+		ret = -EOPNOTSUPP;
+		goto error;
+	case OP_BINARY:
 		if (wsd->reasm_opcode)
 			reset_reassembly(wsd);
 		reassembly_message(wsd);
 		break;
-	case OP_BINARY:
-		ret = -EOPNOTSUPP;
-		goto error;
 	case OP_CLOSE:
 		ret = -EPIPE;
 		goto error;
@@ -306,7 +306,7 @@ int websocket_add(int fd)
 
 void websocket_write(struct socket *s, void *buf, size_t size, bool steal)
 {
-	ws_write(s, OP_TEXT, buf, size, steal);
+	ws_write(s, OP_BINARY, buf, size, steal);
 }
 
 void websocket_broadcast(void *buf, size_t size)
