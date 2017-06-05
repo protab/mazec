@@ -146,7 +146,7 @@ function init() {
             repeat = ((t & 0x80) > 0) ? data[bi++] + 3 : 1;
             sprite = t & 0x1f;
 
-            for (var i; i < repeat; i++) tiles.push(sprite);
+            for (var i = 0; i < repeat; i++) tiles.push(sprite);
         }
         
         if(DEBUG) {
