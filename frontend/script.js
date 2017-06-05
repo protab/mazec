@@ -125,7 +125,7 @@ function init() {
             x_ofs: (data[0] & 0x0f) + 15,
             button_start: data[1] & 0x01 > 0,
             button_end: data[1] & 0x02 > 0,
-            time_left: data[2] + (data[1] & 0xc0 >>> 6) * 256
+            time_left: data[2] + ((data[1] & 0xc0) >>> 6) * 256
         }
 
         if(DEBUG) {
