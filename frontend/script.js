@@ -31,8 +31,8 @@ function getTileCoords(i, header) {
 
 function handleButtonsAndClock(header) {
     document.getElementById('time_left').innerHTML = header.time_left.toString();
-    document.getElementById('button_start').style.display = header.button_start ? 'block' : 'none';
-    document.getElementById('button_end').style.display = header.button_start ? 'block' : 'none';
+    document.getElementById('button_start').style.visibility = header.button_start ? 'visible' : 'hidden';
+    document.getElementById('button_end').style.visibility = header.button_start ? 'visible' : 'hidden';
 }
 
 function render(map) {
