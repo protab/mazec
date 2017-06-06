@@ -77,8 +77,9 @@ function render(map) {
     for (var i in map.floating_tiles) {
         var x = map.floating_tiles[i].x + 7 - map.header.x_ofs;
         var y = map.floating_tiles[i].y + 7 - map.header.y_ofs;
-        var width = globalState.images[map.floating_tiles[i].sprite].width;
-        var height = globalState.images[map.floating_tiles[i].sprite].height;
+        var image = globalState.images[map.floating_tiles[i].sprite];
+        var width = image.width;
+        var height = image.height;
         var angle = map.floating_tiles[i].rotation * Math.PI / 180;
 
         context.translate(x, y);
