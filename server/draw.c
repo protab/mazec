@@ -70,7 +70,7 @@ void draw_force_commit(void)
 		rsec = seconds;
 
 	msg[0] = (y_ofs - 15) << 4 | (x_ofs - 15);
-	msg[1] = (rsec & 0x300 >> 2) | buttons;
+	msg[1] = ((rsec & 0x300) >> 2) | buttons;
 	msg[2] = rsec & 0xff;
 	msg_len = 3;
 
