@@ -2,8 +2,9 @@
 #include <dlfcn.h>
 #include <string.h>
 #include "config.h"
-#include "draw.h"
 #include "common.h"
+#include "draw.h"
+#include "event.h"
 #include "log.h"
 
 static bool dirty;
@@ -53,4 +54,23 @@ void app_redraw(const struct level_ops *level)
 void level_dirty(void)
 {
 	dirty = true;
+}
+
+void app_remote_command(struct socket *s __unused, void *buf, size_t len)
+{
+	unsigned char cmd;
+
+	if (len > 1) {
+		log_warn("got remote websocket command with len %zu", len);
+		return;
+	}
+	cmd = ((unsigned char *)buf)[0];
+	log_info("got remote command 0x%x", cmd);
+	if (cmd & 0x80)
+		return;
+	switch (cmd & 0x7f) {
+	case BUTTON_KILL:
+		event_quit();
+		break;
+	}
 }

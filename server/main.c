@@ -1,3 +1,4 @@
+#include "app.h"
 #include "common.h"
 #include "db.h"
 #include "draw.h"
@@ -22,24 +23,13 @@ static void init_master(int argc, char **argv)
 	check(websocket_http_init(WEBSOCKET_PORT));
 }
 
-static void ws_debug(struct socket *s, void *buf, size_t len)
-{
-	char *disp = buf;
-	char x;
-
-	x = disp[len - 1];
-	disp[len - 1] = '\0';
-	log_info("got: %s%c", disp, x);
-	websocket_write(s, "ack", 3, false);
-}
-
 static void init_child(int argc __unused, char **argv)
 {
 	check(event_init());
 	log_init(argv[1]);
 	check(ipc_client_init());
 	proto_client_init(event_quit);
-	websocket_init(ws_debug, proto_cond_close);
+	websocket_init(app_remote_command, proto_cond_close);
 	draw_init();
 }
 

@@ -363,6 +363,7 @@ static char *process_level(struct p_data *pd)
 		p_draw_timer = timer_new(p_draw, NULL, NULL);
 		check(p_draw_timer);
 		timer_arm(p_draw_timer, REDRAW_INTERVAL, true);
+		draw_button(BUTTON_KILL, true);
 	}
 	if (p_level->get_data)
 		pd->data = p_level->get_data();
