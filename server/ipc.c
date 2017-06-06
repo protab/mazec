@@ -6,6 +6,7 @@
 #include "common.h"
 #include "db.h"
 #include "event.h"
+#include "level.h"
 #include "log.h"
 #include "proto.h"
 #include "socket.h"
@@ -59,7 +60,7 @@ static void pipe_read(struct socket *s, void *data __unused)
 				close(fd);
 				return;
 			}
-			proto_client_redraw();
+			level_dirty();
 		} else if (type == IPC_FD_APP_CRLF || type == IPC_FD_APP_LF) {
 			log_info("received app socket fd %d (type %d)", fd, type);
 			if (proto_client_add(fd, type == IPC_FD_APP_CRLF) < 0)

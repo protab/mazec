@@ -11,6 +11,4 @@ void proto_client_init(proto_close_cb_t close_cb);
 int proto_client_add(int fd, bool crlf);
 void proto_cond_close(void);
 
-void proto_client_redraw(void);
-
 #endif

@@ -12,6 +12,7 @@
 #include "common.h"
 #include "config.h"
 #include "db.h"
+#include "draw.h"
 #include "ipc.h"
 #include "log.h"
 #include "socket.h"
@@ -19,6 +20,8 @@
 #define BUF_SIZE	1024
 #define CMD_LEN		4
 #define VAL_LEN		LOGIN_LEN
+
+#define REDRAW_INTERVAL	200
 
 struct p_data;
 typedef char *(*cmd_process_t)(struct p_data *pd);
@@ -47,6 +50,9 @@ static bool p_end_set;
 static struct timespec p_end;
 static char *p_code;
 static const struct level_ops *p_level;
+static int p_draw_timer;
+
+static int p_draw(int fd, unsigned events, void *data);
 
 /* Deletes the socket if send fails. */
 static int p_send_msg(struct p_data *pd, char *cmd, char *data)
@@ -354,6 +360,9 @@ static char *process_level(struct p_data *pd)
 			time_add(time_now(&p_end), p_level->max_time * 1000);
 			p_end_set = true;
 		}
+		p_draw_timer = timer_new(p_draw, NULL, NULL);
+		check(p_draw_timer);
+		timer_arm(p_draw_timer, REDRAW_INTERVAL, true);
 	}
 	if (p_level->get_data)
 		pd->data = p_level->get_data();
@@ -451,8 +460,13 @@ int proto_client_add(int fd, bool crlf)
 	return p_send_ack(pd);
 }
 
-void proto_client_redraw(void)
+static int p_draw(int fd, unsigned events, void *data __unused)
 {
-	if (p_level)
-		p_level->redraw();
+	if (!(events & EV_READ))
+		return 0;
+	if (p_end_set)
+		draw_seconds((time_left(&p_end) + 999) / 1000);
+	app_redraw(p_level);
+	timer_snooze(fd);
+	return 0;
 }

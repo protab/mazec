@@ -53,7 +53,7 @@ static char *move(void *data, char c, bool *win)
 
 const struct level_ops level_ops = {
 	.max_conn = 2,
-	.max_time = 0,
+	.max_time = 600,
 	.init = init,
 	.get_data = simple_get_data,
 	.free_data = simple_free_data,

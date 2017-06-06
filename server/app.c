@@ -2,8 +2,11 @@
 #include <dlfcn.h>
 #include <string.h>
 #include "config.h"
+#include "draw.h"
 #include "common.h"
 #include "log.h"
+
+static bool dirty;
 
 #define MAX_PATH_LEN	(sizeof(LEVELS_DIR) + LOGIN_LEN + 3)
 
@@ -33,5 +36,21 @@ const struct level_ops *app_get_level(char *code)
 	}
 	if (ops->init)
 		ops->init();
+	dirty = true;
 	return ops;
+}
+
+void app_redraw(const struct level_ops *level)
+{
+	if (dirty)
+		level->redraw();
+	draw_commit();
+	dirty = false;
+}
+
+/* This function is defined in level.h but implemented here. This is to keep
+ * the levels source code contained. */
+void level_dirty(void)
+{
+	dirty = true;
 }

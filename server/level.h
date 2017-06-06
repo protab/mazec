@@ -58,8 +58,9 @@ struct level_ops {
 	 * calls to the function. */
 	char *(*get_h)(void *data, int *res);
 
-	/* Force redraw of the remote screen. Called whenever a new remote
-	 * display is connected. */
+	/* Redraw the remote screen. May be called even when the level did
+	 * not indicate the screen is dirty, for example when a new client
+	 * connetcs. */
 	void (*redraw)(void);
 };
 
@@ -69,5 +70,10 @@ enum {
 	COLOR_PLAYER,
 	COLOR_WALL,
 };
+
+/* Mark the remote screen as dirty. Call whenever there's a change to the
+ * display. If the level is large and there are off screen changes, it is
+ * advisable not to call this function when the change is not visible. */
+void level_dirty(void);
 
 #endif

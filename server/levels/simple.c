@@ -48,7 +48,7 @@ void *simple_get_data(void)
 		;
 	*ptr = d;
 	update_viewport();
-	simple_redraw();
+	level_dirty();
 	return d;
 }
 
@@ -128,7 +128,7 @@ void simple_set_xy(void *data, int x, int y)
 	d->x = x;
 	d->y = y;
 	update_viewport();
-	simple_redraw();
+	level_dirty();
 }
 
 static int find_max(int *data, int len)
@@ -250,5 +250,4 @@ void simple_redraw(void)
 			continue;
 		draw_item((d->x - vport_x + 1) * 15, (d->y - vport_y + 1) * 15, 0, COLOR_PLAYER);
 	}
-	draw_commit();
 }
