@@ -24,5 +24,6 @@ char *sstrdup(const char *s);
 struct timespec *time_now(struct timespec *tp);
 void time_add(struct timespec *tp, long milisecs);
 bool time_after(struct timespec *tp);
+long time_left(struct timespec *tp);
 
 #endif

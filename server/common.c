@@ -126,3 +126,16 @@ bool time_after(struct timespec *tp)
 		return false;
 	return now.tv_nsec > tp->tv_nsec;
 }
+
+long time_left(struct timespec *tp)
+{
+	struct timespec now;
+	long res;
+
+	time_now(&now);
+	res = (tp->tv_sec - now.tv_sec) * 1000 +
+	      (tp->tv_nsec - now.tv_nsec) / 1000000;
+	if (res < 0)
+		res = 0;
+	return res;
+}
