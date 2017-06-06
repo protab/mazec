@@ -26,6 +26,7 @@ static struct sprite **floating_last;
 #define MSG_MAX_LEN	(3 + sizeof(fixed) + 4 * DRAW_MOD_WIDTH * DRAW_MOD_HEIGHT)
 static unsigned char *msg;
 static unsigned int msg_len;
+static bool was_changed;
 
 void draw_init(void)
 {
@@ -58,7 +59,7 @@ static void emit_field(unsigned char color, unsigned cnt)
 	}
 }
 
-void draw_commit(void)
+void draw_force_commit(void)
 {
 	unsigned rsec, cnt;
 	int last_color;
@@ -100,22 +101,41 @@ void draw_commit(void)
 			msg[msg_len++] = p->angle & 0x7f;
 	}
 	websocket_broadcast(msg, msg_len);
+
+	was_changed = false;
+}
+
+void draw_commit(void)
+{
+	if (was_changed)
+		draw_force_commit();
 }
 
 /* -1 seconds means infinity */
 void draw_seconds(int seconds_)
 {
+	if (seconds_ == seconds)
+		return;
+
 	seconds = seconds_;
+	was_changed = true;
 }
 
 void draw_button(unsigned int button, bool on)
 {
-	button = 1 << (button - 1);
+	unsigned new_buttons = buttons;
 
+	button = 1 << (button - 1);
 	if (on)
-		buttons |= button;
+		new_buttons |= button;
 	else
-		buttons &= ~button;
+		new_buttons &= ~button;
+
+	if (new_buttons == buttons)
+		return;
+
+	buttons = new_buttons;
+	was_changed = true;
 }
 
 void draw_clear(void)
@@ -128,11 +148,15 @@ void draw_clear(void)
 	}
 	floating_last = &floating;
 	memset(fixed, 0, sizeof(fixed));
+
+	was_changed = true;
 }
 
 void draw_item(unsigned x, unsigned y, unsigned angle, unsigned color)
 {
 	struct sprite *p;
+
+	was_changed = true;
 
 	if (!(x % 15) && !(y % 15) && !angle) {
 		if (x == 0 || y == 0)
@@ -154,6 +178,11 @@ void draw_item(unsigned x, unsigned y, unsigned angle, unsigned color)
 /* Both x and y must be >= 15. */
 void draw_viewport(unsigned x, unsigned y)
 {
+	if (x_ofs == x && y_ofs == y)
+		return;
+
 	x_ofs = x;
 	y_ofs = y;
+
+	was_changed = true;
 }

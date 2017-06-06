@@ -19,6 +19,7 @@
 void draw_init(void);
 
 void draw_commit(void);
+void draw_force_commit(void);
 
 void draw_seconds(int seconds);
 void draw_button(unsigned int button, bool on);
