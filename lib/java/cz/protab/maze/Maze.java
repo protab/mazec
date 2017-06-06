@@ -54,9 +54,9 @@ public class Maze implements MazeMap, AutoCloseable {
             writer = new PrintWriter(socket.getOutputStream());
 
             logger.log(Level.INFO, "Connected, sending username...");
-            voidCommand(username);
+            voidCommand("USER %s", username);
             logger.log(Level.INFO, "Logged in as user " + username + ". Sending level code...");
-            voidCommand(level);
+            voidCommand("LEVL %s", level);
             logger.log(Level.INFO, "Started level " + level + ".");
         } catch (IOException e) {
             throw new ConnectionError("Nelze se připojit k serveru: " + e.getMessage(), e);
@@ -148,6 +148,9 @@ public class Maze implements MazeMap, AutoCloseable {
         try {
             logger.log(Level.FINE, "Sending command " + format);
             writer.printf(format, args);
+            writer.write('\n');
+            writer.flush();
+            socket.getOutputStream().flush();
             final String response = reader.readLine();
             if (response == null)
                 throw new ConnectionError("Server ukončil spojení.");
@@ -167,7 +170,7 @@ public class Maze implements MazeMap, AutoCloseable {
      * @return číslo, které přišlo v odpovědi
      */
     public int intCommand(String format, Object... args) throws ConnectionError, GameOver {
-        final String response = command(format + "\n", args);
+        final String response = command(format, args);
         assertFormat("DATA \\-?[0-9]+", response);
         return Integer.parseInt(response.substring(5));
     }
@@ -179,7 +182,7 @@ public class Maze implements MazeMap, AutoCloseable {
      * @param args   argumenty do formátu
      */
     public void voidCommand(String format, Object... args) throws ConnectionError, GameOver {
-        assertFormat("DONE", command(format + "\n", args));
+        assertFormat("DONE", command(format, args));
     }
 
     /**
