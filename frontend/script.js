@@ -40,7 +40,7 @@ function getTileCoords(i, header) {
 function handleButtonsAndClock(header) {
     document.getElementById('time_left').innerHTML = header.time_left.toString();
     document.getElementById('button_start').style.visibility = header.button_start ? 'visible' : 'hidden';
-    document.getElementById('button_end').style.visibility = header.button_start ? 'visible' : 'hidden';
+    document.getElementById('button_end').style.visibility = header.button_end ? 'visible' : 'hidden';
 }
 
 function render(map) {
@@ -141,8 +141,8 @@ function init() {
         var header = {
             y_ofs: (data[0] & 0xf0 >>> 4) + 15,
             x_ofs: (data[0] & 0x0f) + 15,
-            button_start: data[1] & 0x01 > 0,
-            button_end: data[1] & 0x02 > 0,
+            button_start: (data[1] & 0x01) > 0,
+            button_end: (data[1] & 0x02) > 0,
             time_left: data[2] + ((data[1] & 0xc0) >>> 6) * 256
         }
 
