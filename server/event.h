@@ -28,7 +28,8 @@ void event_quit(void);
 
 int timer_new(event_callback_t cb, void *cb_data,
 	      cb_data_destructor_t cb_destructor);
-int timer_arm(int fd, int milisecs);
+int timer_arm(int fd, int milisecs, bool repeat);
+int timer_snooze(int fd);
 int timer_del(int fd);
 
 #endif

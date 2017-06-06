@@ -73,10 +73,11 @@ static void pipe_read(struct socket *s, void *data __unused)
 	}
 }
 
-static int idle_expired(int fd __unused, unsigned events, void *data __unused)
+static int idle_expired(int fd, unsigned events, void *data __unused)
 {
-	if (events != EV_READ)
+	if (!(events & EV_READ))
 		return 1;
+	timer_snooze(fd);
 	log_info("no connection in %d ms, terminating", IDLE_TIMEOUT);
 	event_quit();
 	return 0;
@@ -95,7 +96,7 @@ int ipc_client_init(void)
 	idle_timer = timer_new(idle_expired, NULL, NULL);
 	if (idle_timer < 0)
 		return idle_timer;
-	timer_arm(idle_timer, IDLE_TIMEOUT);
+	timer_arm(idle_timer, IDLE_TIMEOUT, false);
 
 	return 0;
 }

@@ -1,5 +1,6 @@
 #include "event.h"
 #include <errno.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -288,15 +289,28 @@ int timer_new(event_callback_t cb, void *cb_data,
 }
 
 /* pass 0 in milisecs to disarm */
-int timer_arm(int fd, int milisecs)
+int timer_arm(int fd, int milisecs, bool repeat)
 {
 	struct itimerspec its;
 
 	memset(&its, 0, sizeof(its));
 	time_add(&its.it_value, milisecs);
+	if (repeat)
+		time_add(&its.it_interval, milisecs);
 	if (timerfd_settime(fd, 0, &its, NULL) < 0)
 		return -errno;
 	return 0;
+}
+
+int timer_snooze(int fd)
+{
+	uint64_t val;
+
+	val = 0;
+	read(fd, &val, sizeof(val));
+	if (val > INT_MAX)
+		val = INT_MAX;
+	return val;
 }
 
 int timer_del(int fd)
