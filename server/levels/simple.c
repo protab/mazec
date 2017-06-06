@@ -121,12 +121,13 @@ char *simple_get_h(void *data __unused, int *res)
 	return NULL;
 }
 
-void simple_set_xy(void *data, int x, int y)
+void simple_set_xy(void *data, int x, int y, int angle)
 {
 	struct simple_data *d = data;
 
 	d->x = x;
 	d->y = y;
+	d->angle = angle;
 	update_viewport();
 	level_dirty();
 }
@@ -248,6 +249,7 @@ void simple_redraw(void)
 		if (d->x < vport_x || d->x >= vport_x + DRAW_MOD_VPORT_WIDTH ||
 		    d->y < vport_y || d->y >= vport_y + DRAW_MOD_VPORT_HEIGHT)
 			continue;
-		draw_item((d->x - vport_x + 1) * 15, (d->y - vport_y + 1) * 15, 0, COLOR_PLAYER);
+		draw_item((d->x - vport_x + 1) * 15, (d->y - vport_y + 1) * 15, d->angle,
+			  COLOR_PLAYER);
 	}
 }

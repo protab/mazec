@@ -11,6 +11,7 @@
 struct simple_data {
 	int x;
 	int y;
+	int angle;
 	struct simple_data *next;
 };
 
@@ -41,8 +42,8 @@ char *simple_get_h(void *data, int *res);
 /* This must be set as the level's 'redraw' callback. */
 void simple_redraw(void);
 
-/* Move the player. This must be called instead of altering the 'x' and 'y'
- * fields directly. */
-void simple_set_xy(void *data, int x, int y);
+/* Move the player. This must be called instead of altering the 'x', 'y' and
+ * 'angle' fields directly. */
+void simple_set_xy(void *data, int x, int y, int angle);
 
 #endif

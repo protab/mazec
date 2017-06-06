@@ -47,7 +47,7 @@ static char *move(void *data, char c, bool *win)
 	}
 	if (level[((d->y + sy) * WIDTH) + (d->x + sx)])
 		return "Tim smerem je zed.";
-	simple_set_xy(data, d->x + sx, d->y + sy);
+	simple_set_xy(data, d->x + sx, d->y + sy, 0);
 	return NULL;
 }
 
