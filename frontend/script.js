@@ -9,13 +9,19 @@ var BASE_URL = 'ws://localhost:1234/';
  *      map
  *      images
  */
-var globalState = {};
+var globalState = {
+    'connectionAttempts': 0
+};
 
 function getUsername() {
     var username = globalState['username'];
     if (username === null || username === undefined) {
-        var oldUsername = localStorage.getItem("username");
-        username = prompt("Zadej své uživatelské jméno:", (oldUsername == null ? 'jmeno' : oldUsername));
+        if (window.location.hash) {
+            username = window.location.hash.substring(1);
+        } else {
+            var oldUsername = localStorage.getItem("username");
+            username = prompt("Zadej své uživatelské jméno:", (oldUsername == null ? 'jmeno' : oldUsername));
+        }
         localStorage.setItem("username", username);
         globalState['username'] = username;
     }
@@ -114,7 +120,7 @@ function init() {
     socket.onopen = function() {
         console.log('Connection opened...');
         setConnectionStatusMsg('Spojení navázáno...')
-        // TODO init
+        globalState.connectionAttempts = 0;
     };
 
     socket.onmessage = function(event){
@@ -208,10 +214,10 @@ function init() {
         setConnectionStatusMsg('Nepřipojeno');
         reloadConnectionButtonText();
         render(null);
+        setTimeout(reconnect, 5000);
     };
 
     globalState['socket'] = socket;
-
 
     setConnectionStatusMsg('Navazování spojení...')
     reloadConnectionButtonText();
@@ -254,4 +260,10 @@ function onConnectionButtonClick() {
     } else {
         closeConnection();
     }
+}
+
+function reconnect() {
+    globalState.connectionAttempts++;
+    if (globalState.connectionAttempts < 3)
+        init();
 }
