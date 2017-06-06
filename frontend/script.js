@@ -1,4 +1,6 @@
 var DEBUG = true;
+var BASE_URL = 'ws://localhost:1234/';
+//var BASE_URL = 'ws://protab.:1234/'
 
 /**
  *  Tyto hodnoty pod stejnými názvy:
@@ -44,12 +46,20 @@ function render(map) {
     var w = canvas.width = 495;
     var h = canvas.height = 495;
 
+
     if (isConnectionClosed()) {
       context.clearRect(0, 0, w, h);
       context.font = "30px monospace"
       context.strokeText("...", w/2-30, h/2-15);
+      handleButtonsAndClock({
+          'time_left': 0,
+          'button_end': true,
+          'button_start': true
+      })
       return;
     }
+
+    handleButtonsAndClock(map.header);
 
     // draw tiles
     for (var i in map.tiles) {
@@ -98,8 +108,7 @@ function setConnectionStatusMsg(msg) {
 }
 
 function init() {
-    var socket = new WebSocket('ws://localhost:1234/' + getUsername());
-    // var socket = new WebSocket('ws://protab.:1234/' + getUsername());
+    var socket = new WebSocket(BASE_URL + getUsername());
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function() {
@@ -195,9 +204,10 @@ function init() {
         render(map);
     };
     socket.onclose = function(event) {
+        console.log('Connection closed...');
         setConnectionStatusMsg('Nepřipojeno');
         reloadConnectionButtonText();
-        render(); // FIXME: chybi parametr
+        render(null);
     };
 
     globalState['socket'] = socket;
