@@ -1,6 +1,6 @@
-var DEBUG = true;
-var BASE_URL = 'ws://localhost:1234/';
-//var BASE_URL = 'ws://protab.:1234/'
+var DEBUG = false;
+var BASE_URL = 'ws://localhost:1234/vasek';
+//var BASE_URL = '$BASE_URL'
 
 /**
  *  Tyto hodnoty pod stejnými názvy:
@@ -38,7 +38,11 @@ function getTileCoords(i, header) {
 }
 
 function handleButtonsAndClock(header) {
-    document.getElementById('time_left').innerHTML = header.time_left.toString();
+    var tl = header.time_left.toString();
+    if (tl === "1023")
+        tl = '∞'
+
+    document.getElementById('time_left').innerHTML = tl;
     document.getElementById('button_start').style.visibility = header.button_start ? 'visible' : 'hidden';
     document.getElementById('button_end').style.visibility = header.button_end ? 'visible' : 'hidden';
 }
@@ -52,17 +56,19 @@ function render(map) {
     var w = canvas.width = 495;
     var h = canvas.height = 495;
 
+    context.fillStyle = 'black';
+    context.font = "30px monospace"
+    context.strokeStyle = 'white';
+    context.fillRect(0, 0, w, h);
 
-    if (isConnectionClosed()) {
-      context.clearRect(0, 0, w, h);
-      context.font = "30px monospace"
-      context.strokeText("...", w/2-30, h/2-15);
-      handleButtonsAndClock({
-          'time_left': 0,
-          'button_end': true,
-          'button_start': true
-      })
-      return;
+    if (isConnectionClosed() || map == null) {
+        context.strokeText("...", w/2-30, h/2-15);
+        handleButtonsAndClock({
+            'time_left': 0,
+            'button_end': false,
+            'button_start': false
+        })
+        return;
     }
 
     handleButtonsAndClock(map.header);
@@ -89,6 +95,7 @@ function render(map) {
         context.translate(-x, -y);
     }
 }
+window.addEventListener('load', render)
 
 function rerender() {
     var map = globalState['map'];
@@ -115,13 +122,14 @@ function setConnectionStatusMsg(msg) {
 }
 
 function init() {
-    var socket = new WebSocket(BASE_URL + getUsername());
+    var socket = new WebSocket(BASE_URL);
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function() {
         console.log('Connection opened...');
         setConnectionStatusMsg('Spojení navázáno...')
         globalState.connectionAttempts = 0;
+        render(null);
     };
 
     socket.onmessage = function(event){
@@ -215,7 +223,7 @@ function init() {
         setConnectionStatusMsg('Nepřipojeno');
         reloadConnectionButtonText();
         render(null);
-        setTimeout(reconnect, 5000);
+        setTimeout(reconnect, 200);
     };
 
     globalState['socket'] = socket;

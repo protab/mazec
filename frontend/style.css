@@ -25,6 +25,7 @@ body {
   width: 68.2vmin;
   height: 68.2vmin;
   border: 0.4vmin solid black;
+  /*background: black;*/
 
   image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
   image-rendering: -moz-crisp-edges;          /* Firefox                        */
@@ -52,6 +53,10 @@ body {
   margin-top: 1vmin;
   background: lightgray;
   border: 0.4vmin solid black;
+}
+
+#button_end #button_start {
+  visibility: invisible;
 }
 
 footer { /* 6.4 */
