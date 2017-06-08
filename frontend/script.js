@@ -39,7 +39,7 @@ function getTileCoords(i, header) {
 
 function handleButtonsAndClock(header) {
     var tl = header.time_left.toString();
-    if (tl === "1023")
+    if (header.time_left === 1023)
         tl = '∞'
 
     document.getElementById('time_left').innerHTML = tl;
