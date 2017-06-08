@@ -325,5 +325,6 @@ void websocket_init(websocket_cb_t cb, websocket_close_cb_t close_cb)
 {
 	ws_cb = cb;
 	ws_close_cb = close_cb;
+	websockets = NULL;
 	ws_count = 0;
 }
