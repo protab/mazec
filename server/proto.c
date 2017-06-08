@@ -51,6 +51,7 @@ static int p_bound_count;
 static int p_bound_max;
 static bool p_end_set;
 static struct timespec p_end;
+static long p_paused_time;
 static char *p_code;
 static const struct level_ops *p_level;
 static int p_draw_timer;
@@ -344,6 +345,8 @@ static char *process_cmd(struct p_data *pd)
 			 * things only on the first one. */
 			p_pause_all(true);
 			draw_button(BUTTON_WAIT, true);
+			if (p_end_set)
+				p_paused_time = time_left(&p_end);
 			p_waiting = true;
 		}
 	} else {
@@ -507,14 +510,23 @@ void proto_resume(void)
 	p_waiting = false;
 	p_pause_all(false);
 	draw_button(BUTTON_WAIT, false);
+	if (p_end_set)
+		time_add(time_now(&p_end), p_paused_time);
 }
 
 static int p_draw(int fd, unsigned events, void *data __unused)
 {
 	if (!(events & EV_READ))
 		return 0;
-	if (p_end_set)
-		draw_seconds((time_left(&p_end) + 999) / 1000);
+	if (p_end_set) {
+		long left;
+
+		if (p_waiting)
+			left = p_paused_time;
+		else
+			left = time_left(&p_end);
+		draw_seconds((left + 999) / 1000);
+	}
 	app_redraw(p_level);
 	timer_snooze(fd);
 	return 0;
