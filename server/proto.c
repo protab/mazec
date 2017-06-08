@@ -352,8 +352,11 @@ static char *process_level(struct p_data *pd)
 
 	if (!p_code) {
 		p_level = app_get_level(pd->val);
-		if (!p_level)
+		if (!p_level) {
+			log_info("unknown level \"%s\"", pd->val);
 			return P_MSG_LEVL_UNKNOWN;
+		}
+		log_info("level \"%s\"", pd->val);
 		p_code = sstrdup(pd->val);
 		p_bound_max = p_level->max_conn;
 		if (p_level->max_time) {
