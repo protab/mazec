@@ -32,9 +32,13 @@ struct socket {
 	void *cb_data;
 	cb_data_destructor_t cb_destructor;
 	struct msg *wqueue;
+	int wqueue_len;
 };
 
+#define WQUEUE_MAX_LEN	20
+
 static void socket_process_wqueue(struct socket *s);
+static void socket_del_wqueue(struct socket *s);
 
 static int socket_cb(int fd, unsigned events, void *data)
 {
@@ -78,6 +82,7 @@ struct socket *socket_add(int fd, socket_cb_read_t cb_read, void *cb_data,
 	s->cb_data = cb_data;
 	s->cb_destructor = cb_destructor;
 	s->wqueue = NULL;
+	s->wqueue_len = 0;
 	if (event_add_fd(fd, EV_SOCK | EV_READ, socket_cb, s, socket_kill) < 0) {
 		sfree(s);
 		return NULL;
@@ -151,6 +156,7 @@ void socket_ref(struct socket *s)
 void socket_unref(struct socket *s)
 {
 	if (--s->refs == 0) {
+		socket_del_wqueue(s);
 		if (s->cb_destructor)
 			s->cb_destructor(s->cb_data);
 		if (s->should_close)
@@ -217,6 +223,8 @@ static void socket_queue_data(struct socket *s, void *buf, size_t size,
 	for (ptr = &s->wqueue; *ptr; ptr = &(*ptr)->next)
 		;
 	*ptr = m;
+
+	s->wqueue_len++;
 }
 
 int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
@@ -234,6 +242,9 @@ int socket_write_ancil(struct socket *s, void *buf, size_t size, bool steal,
 			sfree(ancil_buf);
 		return 0;
 	}
+
+	if (s->wqueue_len >= WQUEUE_MAX_LEN)
+		return -ENOBUFS;
 
 	ret = event_change_fd_add(s->fd, EV_WRITE);
 	if (ret < 0)
@@ -296,6 +307,7 @@ static void socket_process_wqueue(struct socket *s)
 		}
 		if (written < 0 || (size_t)written == m->size) {
 			s->wqueue = m->next;
+			s->wqueue_len--;
 			sfree(m->buf);
 			sfree(m);
 		} else {
@@ -311,6 +323,22 @@ static void socket_process_wqueue(struct socket *s)
 		s->cb_write_done(s, s->cb_data);
 		s->cb_write_done = NULL;
 	}
+}
+
+static void socket_del_wqueue(struct socket *s)
+{
+	while (s->wqueue) {
+		struct msg *m = s->wqueue;
+
+		s->wqueue = m->next;
+		if (m->ancil_buf)
+			sfree(m->ancil_buf);
+		if (m->fd_to_close)
+			close(m->fd_to_close);
+		sfree(m->buf);
+		sfree(m);
+	}
+	s->wqueue_len = 0;
 }
 
 struct listen_data {
