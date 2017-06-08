@@ -40,7 +40,11 @@ struct p_data {
 	void *data;
 	bool bound;
 	// TODO: timeout when nothing received for some time
+
+	struct p_data *next;
 };
+
+static struct p_data *p_sockets;
 
 static proto_close_cb_t p_close_cb;
 static int p_count;
@@ -414,6 +418,7 @@ int proto_server_init(unsigned port)
 
 void proto_client_init(proto_close_cb_t close_cb)
 {
+	p_sockets = NULL;
 	p_close_cb = close_cb;
 	p_count = 0;
 	p_bound_count = 0;
@@ -433,9 +438,15 @@ void proto_cond_close(void)
 static void p_free(void *data)
 {
 	struct p_data *pd = data;
+	struct p_data **ptr;
 	bool bound = pd->bound;
 
+	for (ptr = &p_sockets; *ptr && *ptr != pd; ptr = &(*ptr)->next)
+		;
+	if (*ptr)
+		*ptr = pd->next;
 	p_count--;
+
 	if (bound)
 		p_bound_count--;
 	if (p_level && p_level->free_data)
@@ -459,6 +470,9 @@ int proto_client_add(int fd, bool crlf)
 	}
 	pd->process = process_level;
 	pd->crlf = crlf;
+
+	pd->next = p_sockets;
+	p_sockets = pd;
 	p_count++;
 
 	return p_send_ack(pd);
