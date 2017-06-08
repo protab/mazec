@@ -38,11 +38,9 @@ function getTileCoords(i, header) {
 }
 
 function handleButtonsAndClock(header) {
-    var tl = header.time_left.toString();
-    if (header.time_left === 1023)
-        tl = '∞'
+    document.getElementById('clock').style.visibility = (header.time_left == 1023) ? 'hidden' : 'visible';
 
-    document.getElementById('time_left').innerHTML = tl;
+    document.getElementById('time_left').innerHTML = header.time_left.toString();;
     document.getElementById('button_start').style.visibility = header.button_start ? 'visible' : 'hidden';
     document.getElementById('button_end').style.visibility = header.button_end ? 'visible' : 'hidden';
 }
