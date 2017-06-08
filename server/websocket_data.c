@@ -304,17 +304,12 @@ int websocket_add(int fd)
 	return 0;
 }
 
-void websocket_write(struct socket *s, void *buf, size_t size, bool steal)
-{
-	ws_write(s, OP_BINARY, buf, size, steal);
-}
-
 void websocket_broadcast(void *buf, size_t size)
 {
 	struct ws_data *wsd;
 
 	for (wsd = websockets; wsd; wsd = wsd->next)
-		websocket_write(wsd->s, buf, size, false);
+		ws_write(wsd->s, OP_BINARY, buf, size, false);
 }
 
 bool websocket_connected(void)
