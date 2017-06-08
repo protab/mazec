@@ -391,6 +391,8 @@ static char *process_level(struct p_data *pd)
 	p_bound_count++;
 
 	p_send_ack(pd);
+	if (p_waiting)
+		socket_pause(pd->s, true);
 	return NULL;
 }
 
