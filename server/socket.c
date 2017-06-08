@@ -119,9 +119,12 @@ int socket_stop_reading(struct socket *s)
 /* May be called multiple times, may be called even when the socket is dead.
  * However, must not be called on a socket that was freed (i.e. has zero
  * reference count). It is safe to call socket_del from that socket's
- * callbacks without taking a reference, as socket is freed only after all
- * its callbacks are finished. It is NOT safe to call socket_del from other
- * socket's callbacks without having a reference. */
+ * callbacks without taking a reference, as socket is freed only after the
+ * current round of callbacks is finished. It's also safe to keep sockets on
+ * a list, provided that the socket is removed from that list by the socket
+ * destructor and no other pointers to the socket are kept. It is NOT safe
+ * to keep socket pointers around (such as a list unsynchronized with the
+ * socket destructor) without having a reference. */
 void socket_del(struct socket *s)
 {
 	event_del_fd(s->fd);
