@@ -57,7 +57,7 @@ static const struct level_ops *p_level;
 static int p_draw_timer;
 static bool p_waiting;
 
-static void p_enable_all(bool enable);
+static void p_pause_all(bool enable);
 static int p_draw(int fd, unsigned events, void *data);
 
 /* Deletes the socket if send fails. */
@@ -343,7 +343,7 @@ static char *process_cmd(struct p_data *pd)
 		if (!p_waiting) {
 			/* Could have two concurrent wait commands, activate
 			 * things only on the first one. */
-			p_enable_all(false);
+			p_pause_all(true);
 			draw_button(BUTTON_WAIT, true);
 			p_waiting = true;
 		}
@@ -491,12 +491,12 @@ int proto_client_add(int fd, bool crlf)
 	return p_send_ack(pd);
 }
 
-static void p_enable_all(bool enable)
+static void p_pause_all(bool pause)
 {
 	struct p_data *pd;
 
 	for (pd = p_sockets; pd; pd = pd->next)
-		socket_enable(pd->s, enable);
+		socket_pause(pd->s, pause);
 }
 
 void proto_resume(void)
@@ -504,7 +504,7 @@ void proto_resume(void)
 	if (!p_waiting)
 		return;
 	p_waiting = false;
-	p_enable_all(true);
+	p_pause_all(false);
 	draw_button(BUTTON_WAIT, false);
 }
 

@@ -121,11 +121,11 @@ int socket_stop_reading(struct socket *s)
 	return event_change_fd_remove(s->fd, EV_READ);
 }
 
-int socket_enable(struct socket *s, bool enable)
+int socket_pause(struct socket *s, bool pause)
 {
 	if (s->dead)
 		return 0;
-	return event_enable_fd(s->fd, enable);
+	return event_pause_fd(s->fd, pause);
 }
 
 /* May be called multiple times, may be called even when the socket is dead.

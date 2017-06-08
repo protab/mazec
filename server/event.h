@@ -20,6 +20,7 @@ int event_add_fd(int fd, unsigned events, event_callback_t cb, void *cb_data,
 		 cb_data_destructor_t cb_destructor);
 int event_del_fd(int fd);
 int event_enable_fd(int fd, bool enable);
+int event_pause_fd(int fd, bool pause);
 int event_change_fd(int fd, unsigned events);
 int event_change_fd_add(int fd, unsigned events);
 int event_change_fd_remove(int fd, unsigned events);

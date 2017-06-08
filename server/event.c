@@ -155,6 +155,8 @@ static struct fd_data *find_event(int fd)
 	return fdd;
 }
 
+/* enable values: 1 to add to the poll set, 0 to remove, -1 to change, -2 to
+ * change to listen for errors only */
 static int event_change_fd_data(struct fd_data *fdd, int enable)
 {
 	struct epoll_event e;
@@ -172,6 +174,8 @@ static int event_change_fd_data(struct fd_data *fdd, int enable)
 	}
 
 	e.events = fdd->events;
+	if (enable == -2)
+		e.events &= EV_ERROR;
 	e.data.ptr = fdd;
 
 	if (epoll_ctl(epfd, op, fdd->fd, &e) < 0)
@@ -188,6 +192,15 @@ int event_enable_fd(int fd, bool enable)
 	if (!fdd)
 		return -ENOENT;
 	return event_change_fd_data(fdd, (int)enable);
+}
+
+int event_pause_fd(int fd, bool pause)
+{
+	struct fd_data *fdd = find_event(fd);
+
+	if (!fdd)
+		return -ENOENT;
+	return event_change_fd_data(fdd, pause ? -2 : -1);
 }
 
 int event_change_fd(int fd, unsigned events)
