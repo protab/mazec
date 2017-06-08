@@ -39,7 +39,6 @@ struct p_data {
 	cmd_process_t process;
 	void *data;
 	bool bound;
-	// TODO: timeout when nothing received for some time
 
 	struct p_data *next;
 };
