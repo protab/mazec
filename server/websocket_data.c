@@ -88,6 +88,7 @@ static void ws_write(struct socket *s, unsigned opcode, void *buf, size_t size, 
 error:
 	if (steal)
 		sfree(buf);
+	socket_del(s);
 }
 
 static void ws_error(struct socket *s, uint16_t code)
@@ -308,6 +309,9 @@ void websocket_broadcast(void *buf, size_t size)
 {
 	struct ws_data *wsd;
 
+	/* This is safe, the websocket removes itself from the 'websockets'
+	 * list in its destructor. All websockets here are thus still
+	 * allocated. */
 	for (wsd = websockets; wsd; wsd = wsd->next)
 		ws_write(wsd->s, OP_BINARY, buf, size, false);
 }
