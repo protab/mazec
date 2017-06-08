@@ -317,6 +317,11 @@ void websocket_broadcast(void *buf, size_t size)
 		websocket_write(wsd->s, buf, size, false);
 }
 
+bool websocket_connected(void)
+{
+	return ws_count > 0;
+}
+
 void websocket_init(websocket_cb_t cb, websocket_close_cb_t close_cb)
 {
 	ws_cb = cb;

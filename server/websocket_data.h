@@ -12,5 +12,6 @@ void websocket_init(websocket_cb_t cb, websocket_close_cb_t close_cb);
 int websocket_add(int fd);
 void websocket_write(struct socket *s, void *buf, size_t size, bool steal);
 void websocket_broadcast(void *buf, size_t size);
+bool websocket_connected(void);
 
 #endif

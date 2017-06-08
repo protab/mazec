@@ -6,6 +6,7 @@
 #include "draw.h"
 #include "event.h"
 #include "log.h"
+#include "websocket_data.h"
 
 static bool dirty;
 
@@ -43,6 +44,9 @@ const struct level_ops *app_get_level(char *code)
 
 void app_redraw(const struct level_ops *level)
 {
+	if (!websocket_connected())
+		return;
+
 	if (dirty)
 		level->redraw();
 	draw_commit();
