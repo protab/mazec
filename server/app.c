@@ -6,6 +6,7 @@
 #include "draw.h"
 #include "event.h"
 #include "log.h"
+#include "proto.h"
 #include "websocket_data.h"
 
 static bool dirty;
@@ -73,6 +74,9 @@ void app_remote_command(struct socket *s __unused, void *buf, size_t len)
 	if (cmd & 0x80)
 		return;
 	switch (cmd & 0x7f) {
+	case BUTTON_WAIT:
+		proto_resume();
+		break;
 	case BUTTON_KILL:
 		event_quit();
 		break;

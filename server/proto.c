@@ -55,7 +55,9 @@ static struct timespec p_end;
 static char *p_code;
 static const struct level_ops *p_level;
 static int p_draw_timer;
+static bool p_waiting;
 
+static void p_enable_all(bool enable);
 static int p_draw(int fd, unsigned events, void *data);
 
 /* Deletes the socket if send fails. */
@@ -333,8 +335,18 @@ static char *process_cmd(struct p_data *pd)
 	} else if (!strcmp(pd->cmd, "WAIT")) {
 		if (pd->is_val)
 			return P_MSG_EXTRA_PARAM;
-		// FIXME: implement WAIT
+
+		/* The response will be queued but won't be send until the
+		 * socket is enabled. */
 		p_send_ack(pd);
+
+		if (!p_waiting) {
+			/* Could have two concurrent wait commands, activate
+			 * things only on the first one. */
+			p_enable_all(false);
+			draw_button(BUTTON_WAIT, true);
+			p_waiting = true;
+		}
 	} else {
 		return P_MSG_CMD_UNKNOWN;
 	}
@@ -426,6 +438,7 @@ void proto_client_init(proto_close_cb_t close_cb)
 	p_end_set = false;
 	p_code = NULL;
 	p_level = NULL;
+	p_waiting = false;
 }
 
 /* Calls the close callback if there is no app socket open. */
@@ -476,6 +489,23 @@ int proto_client_add(int fd, bool crlf)
 	p_count++;
 
 	return p_send_ack(pd);
+}
+
+static void p_enable_all(bool enable)
+{
+	struct p_data *pd;
+
+	for (pd = p_sockets; pd; pd = pd->next)
+		socket_enable(pd->s, enable);
+}
+
+void proto_resume(void)
+{
+	if (!p_waiting)
+		return;
+	p_waiting = false;
+	p_enable_all(true);
+	draw_button(BUTTON_WAIT, false);
 }
 
 static int p_draw(int fd, unsigned events, void *data __unused)

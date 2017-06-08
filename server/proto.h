@@ -10,5 +10,6 @@ int proto_server_init(unsigned port);
 void proto_client_init(proto_close_cb_t close_cb);
 int proto_client_add(int fd, bool crlf);
 void proto_cond_close(void);
+void proto_resume(void);
 
 #endif

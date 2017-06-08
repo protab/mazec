@@ -14,6 +14,7 @@ struct socket *socket_add(int fd, socket_cb_read_t cb_read, void *cb_data,
 void socket_set_write_done_cb(struct socket *s, socket_cb_read_t cb_write_done);
 int socket_set_unmanaged(struct socket *s);
 int socket_stop_reading(struct socket *s);
+int socket_enable(struct socket *s, bool enable);
 void socket_del(struct socket *s);
 void socket_flush_and_del(struct socket *s);
 void socket_ref(struct socket *s);
