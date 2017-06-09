@@ -57,11 +57,12 @@ static void ws_free(void *data)
 		ws_close_cb();
 }
 
-static void ws_write(struct socket *s, unsigned opcode, void *buf, size_t size, bool steal)
+static void ws_write(struct socket *s, unsigned opcode, void *buf, size_t size)
 {
 	char hdr[6];
 	unsigned payload_enc_len;
 	size_t tmp;
+	void *msg;
 
 	hdr[0] = opcode | 0x80;
 	if (size <= 125) {
@@ -79,22 +80,21 @@ static void ws_write(struct socket *s, unsigned opcode, void *buf, size_t size, 
 		hdr[3 + i] = tmp & 0xff;
 		tmp >>= 8;
 	}
-	if (socket_write(s, hdr, 2 + payload_enc_len, false) < 0)
-		goto error;
-	if (size && socket_write(s, buf, size, steal) < 0)
-		goto error;
-	return;
 
-error:
-	if (steal)
-		sfree(buf);
-	socket_del(s);
+	msg = salloc(2 + payload_enc_len + size);
+	memcpy(msg, hdr, 2 + payload_enc_len);
+	memcpy(msg + 2 + payload_enc_len, buf, size);
+
+	if (socket_write(s, msg, 2 + payload_enc_len + size, true) < 0) {
+		sfree(msg);
+		socket_del(s);
+	}
 }
 
 static void ws_error(struct socket *s, uint16_t code)
 {
 	code = htons(code);
-	ws_write(s, OP_CLOSE, &code, 2, false);
+	ws_write(s, OP_CLOSE, &code, 2);
 	socket_flush_and_del(s);
 }
 
@@ -173,7 +173,8 @@ static int consume_message(struct ws_data *wsd)
 		ret = -EPIPE;
 		goto error;
 	case OP_PING:
-		ws_write(wsd->s, OP_PONG, wsd->payload, wsd->payload_len, true);
+		ws_write(wsd->s, OP_PONG, wsd->payload, wsd->payload_len);
+		sfree(wsd->payload);
 		wsd->payload = NULL;
 		break;
 	case OP_PONG:
@@ -313,7 +314,7 @@ void websocket_broadcast(void *buf, size_t size)
 	 * list in its destructor. All websockets here are thus still
 	 * allocated. */
 	for (wsd = websockets; wsd; wsd = wsd->next)
-		ws_write(wsd->s, OP_BINARY, buf, size, false);
+		ws_write(wsd->s, OP_BINARY, buf, size);
 }
 
 bool websocket_connected(void)
