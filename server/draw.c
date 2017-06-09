@@ -15,15 +15,15 @@ struct sprite {
 
 static int seconds;
 static unsigned buttons;
-static unsigned x_ofs;
-static unsigned y_ofs;
-static unsigned char fixed[(DRAW_MOD_WIDTH - 1) * (DRAW_MOD_HEIGHT - 1)];
+static int x_orig, y_orig;
+static int x_start, y_start;
+static unsigned char fixed[(DRAW_MOD_WIDTH + 1) * (DRAW_MOD_HEIGHT + 1)];
 static struct sprite *floating;
 static struct sprite **floating_last;
 
-#define fixed_coords(x, y)	((y) * (DRAW_MOD_WIDTH - 1) + (x))
+#define fixed_coords(x, y)	((y) * (DRAW_MOD_WIDTH + 1) + (x))
 
-#define MSG_MAX_LEN	(3 + sizeof(fixed) + 4 * DRAW_MOD_WIDTH * DRAW_MOD_HEIGHT)
+#define MSG_MAX_LEN	(3 + sizeof(fixed) + 4 * (DRAW_MOD_WIDTH + 2) * (DRAW_MOD_HEIGHT + 2))
 static unsigned char *msg;
 static unsigned int msg_len;
 static bool was_changed;
@@ -32,7 +32,8 @@ void draw_init(void)
 {
 	seconds = -1;
 	buttons = 0;
-	x_ofs = y_ofs = 15;
+	x_orig = y_orig = 0;
+	x_start = y_start = 0;
 	floating = NULL;
 	draw_clear();
 
@@ -69,7 +70,7 @@ void draw_force_commit(void)
 	else
 		rsec = seconds;
 
-	msg[0] = (y_ofs - 15) << 4 | (x_ofs - 15);
+	msg[0] = (x_orig - x_start) << 4 | (y_orig - y_start);
 	msg[1] = ((rsec & 0x300) >> 2) | buttons;
 	msg[2] = rsec & 0xff;
 	msg_len = 3;
@@ -152,22 +153,27 @@ void draw_clear(void)
 	was_changed = true;
 }
 
-void draw_item(unsigned x, unsigned y, unsigned angle, unsigned color)
+void draw_item(int x, int y, unsigned angle, unsigned color)
 {
 	struct sprite *p;
 
+	if (x <= x_orig - DRAW_MOD || y <= y_orig - DRAW_MOD ||
+	    x >= x_orig + DRAW_WIDTH || y >= y_orig + DRAW_HEIGHT)
+		/* the item is off screen */
+		return;
+
 	was_changed = true;
 
-	if (!(x % 15) && !(y % 15) && !angle) {
-		if (x == 0 || y == 0)
-			/* the first row and the first column are not transfered */
-			return;
-		fixed[fixed_coords(x / 15 - 1, y / 15 - 1)] = color;
+	x -= x_start;
+	y -= y_start;
+
+	if (!(x % DRAW_MOD) && !(y % DRAW_MOD) && !angle) {
+		fixed[fixed_coords(x / DRAW_MOD, y / DRAW_MOD)] = color;
 		return;
 	}
 	p = salloc(sizeof(*p));
-	p->x = x;
-	p->y = y;
+	p->x = x + DRAW_MOD;	/* this is never negative */
+	p->y = y + DRAW_MOD;
 	p->angle = angle / 3;
 	p->color = color;
 	p->next = NULL;
@@ -175,14 +181,15 @@ void draw_item(unsigned x, unsigned y, unsigned angle, unsigned color)
 	floating_last = &p->next;
 }
 
-/* Both x and y must be >= 15. */
-void draw_viewport(unsigned x, unsigned y)
+void draw_set_origin(int x, int y)
 {
-	if (x_ofs == x && y_ofs == y)
+	if (x_orig == x && y_orig == y)
 		return;
 
-	x_ofs = x;
-	y_ofs = y;
+	x_orig = x;
+	y_orig = y;
+	x_start = x - (x % DRAW_MOD);
+	y_start = y - (y % DRAW_MOD);
 
 	was_changed = true;
 }

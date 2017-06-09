@@ -29,8 +29,8 @@ void simple_init(int width_, int height_, unsigned char *level,
 	level_copy = salloc(width * height);
 	first = NULL;
 
-	vport_x = start_x - DRAW_MOD_VPORT_WIDTH / 2;
-	vport_y = start_y - DRAW_MOD_VPORT_HEIGHT / 2;
+	vport_x = start_x - DRAW_MOD_WIDTH / 2;
+	vport_y = start_y - DRAW_MOD_HEIGHT / 2;
 	if (vport_x < 0)
 		vport_x = 0;
 	if (vport_y < 0)
@@ -155,21 +155,21 @@ static void update_viewport(void)
 	 * each direction */
 	memset(shifts, 0, sizeof(shifts));
 	for (d = first; d; d = d->next) {
-		if (d->y == vport_y + DRAW_MOD_VPORT_HEIGHT - 1)
+		if (d->y == vport_y + DRAW_MOD_HEIGHT - 1)
 			shifts[0]--;
 		else if (d->y == vport_y - 1)
 			shifts[0]++;
 		else if (d->y == vport_y)
 			shifts[1]--;
-		else if (d->y == vport_y + DRAW_MOD_VPORT_HEIGHT)
+		else if (d->y == vport_y + DRAW_MOD_HEIGHT)
 			shifts[1]++;
-		if (d->x == vport_x + DRAW_MOD_VPORT_WIDTH - 1)
+		if (d->x == vport_x + DRAW_MOD_WIDTH - 1)
 			shifts[2]--;
 		else if (d->x == vport_x - 1)
 			shifts[2]++;
 		else if (d->x == vport_x)
 			shifts[3]--;
-		else if (d->x == vport_x + DRAW_MOD_VPORT_WIDTH)
+		else if (d->x == vport_x + DRAW_MOD_WIDTH)
 			shifts[3]++;
 	}
 
@@ -180,24 +180,24 @@ static void update_viewport(void)
 		 * we can improve the viewport location by keeping a border */
 		memset(shifts, 0, sizeof(shifts));
 		for (d = first; d; d = d->next) {
-			if (d->x < vport_x || d->x >= vport_x + DRAW_MOD_VPORT_WIDTH ||
-			    d->y < vport_y || d->y >= vport_y + DRAW_MOD_VPORT_HEIGHT)
+			if (d->x < vport_x || d->x >= vport_x + DRAW_MOD_WIDTH ||
+			    d->y < vport_y || d->y >= vport_y + DRAW_MOD_HEIGHT)
 				continue;
 			if (d->y < vport_y + BORDER)
 				shifts[0]++;
 			if (d->y <= vport_y + BORDER)
 				shifts[1]--;
-			if (d->y > vport_y + DRAW_MOD_VPORT_HEIGHT - 1 - BORDER)
+			if (d->y > vport_y + DRAW_MOD_HEIGHT - 1 - BORDER)
 				shifts[1]++;
-			if (d->y >= vport_y + DRAW_MOD_VPORT_HEIGHT - 1 - BORDER)
+			if (d->y >= vport_y + DRAW_MOD_HEIGHT - 1 - BORDER)
 				shifts[0]--;
 			if (d->x < vport_x + BORDER)
 				shifts[2]++;
 			if (d->x <= vport_x + BORDER)
 				shifts[3]--;
-			if (d->x > vport_x + DRAW_MOD_VPORT_WIDTH - 1 - BORDER)
+			if (d->x > vport_x + DRAW_MOD_WIDTH - 1 - BORDER)
 				shifts[3]++;
-			if (d->x >= vport_x + DRAW_MOD_VPORT_WIDTH - 1 - BORDER)
+			if (d->x >= vport_x + DRAW_MOD_WIDTH - 1 - BORDER)
 				shifts[2]--;
 		}
 
@@ -212,7 +212,7 @@ static void update_viewport(void)
 			vport_y--;
 		break;
 	case 1:
-		if (vport_y < height - DRAW_MOD_VPORT_HEIGHT)
+		if (vport_y < height - DRAW_MOD_HEIGHT)
 			vport_y++;
 		break;
 	case 2:
@@ -220,7 +220,7 @@ static void update_viewport(void)
 			vport_x--;
 		break;
 	case 3:
-		if (vport_x < width - DRAW_MOD_VPORT_WIDTH)
+		if (vport_x < width - DRAW_MOD_WIDTH)
 			vport_x++;
 		break;
 	}
@@ -233,23 +233,19 @@ void simple_redraw(void)
 	struct simple_data *d;
 
 	draw_clear();
+	draw_set_origin(vport_x * DRAW_MOD, vport_y * DRAW_MOD);
 
-	x_max = DRAW_MOD_VPORT_WIDTH;
+	x_max = vport_x + DRAW_MOD_WIDTH;
 	if (x_max > width)
 		x_max = width;
-	y_max = DRAW_MOD_VPORT_HEIGHT;
+	y_max = vport_y + DRAW_MOD_HEIGHT;
 	if (y_max > height)
 		y_max = height;
 
-	for (y = 0; y < y_max; y++)
-		for (x = 0; x < x_max; x++)
-			draw_item((x + 1) * 15, (y + 1) * 15, 0,
-				  level_data[(y + vport_y) * width + (x + vport_x)]);
-	for (d = first; d; d = d->next) {
-		if (d->x < vport_x || d->x >= vport_x + DRAW_MOD_VPORT_WIDTH ||
-		    d->y < vport_y || d->y >= vport_y + DRAW_MOD_VPORT_HEIGHT)
-			continue;
-		draw_item((d->x - vport_x + 1) * 15, (d->y - vport_y + 1) * 15, d->angle,
-			  COLOR_PLAYER);
-	}
+	for (y = vport_y; y < y_max; y++)
+		for (x = vport_x; x < x_max; x++)
+			draw_item(x * DRAW_MOD, y * DRAW_MOD, 0,
+				  level_data[y * width + x]);
+	for (d = first; d; d = d->next)
+		draw_item(d->x * DRAW_MOD, d->y * DRAW_MOD, d->angle, COLOR_PLAYER);
 }
