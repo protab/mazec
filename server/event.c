@@ -329,6 +329,9 @@ int timer_snooze(int fd)
 
 int timer_del(int fd)
 {
+	int res;
+
+	res = event_del_fd(fd);
 	close(fd);
-	return event_del_fd(fd);
+	return res;
 }
