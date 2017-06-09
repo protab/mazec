@@ -30,7 +30,6 @@ LEVL <string>		Povinně druhá odeslaná zpráva klientem. Vybírá úlohu
 			neexistenci úlohy nebo na příliš mnoho otevřených
 			spojení.
 WAIT			Čekám na spuštění přes frontend (->DONE nebo OVER).
-			Selže při timeoutu.
 
 GETW			Dotaz na šířku (->DATA). Je zaručeno, že tato
 			hodnota se v průběhu nebude měnit.
@@ -79,7 +78,7 @@ Typický průběh:
 	MOVE S
 				OVER Vyborne! Dalsi vyzvou je "matfyz".
 
-Server měří čas od prvního příkazu z druhé skupiny, tj. GET*, WHAT nebo MOVE.
+Server měří čas od připojení se k úloze (tj. od příkazu LEVL).
 
 Knihovny by měly nabízet nějaké pekné API k odesílání těchto zpráv, a nabízet
 dva režimy fungování:
