@@ -22,7 +22,8 @@
 #define CMD_LEN		4
 #define VAL_LEN		LOGIN_LEN
 
-#define REDRAW_INTERVAL	200
+#define REDRAW_INTERVAL		200
+#define CAN_PAUSE_INTERVAL	1000
 
 struct p_data;
 typedef char *(*cmd_process_t)(struct p_data *pd);
@@ -52,6 +53,7 @@ static int p_bound_count;
 static int p_bound_max;
 static bool p_end_set;
 static struct timespec p_end;
+static struct timespec p_can_pause_until;
 static long p_paused_time;
 static char *p_code;
 static const struct level_ops *p_level;
@@ -346,8 +348,12 @@ static char *process_cmd(struct p_data *pd)
 			 * things only on the first one. */
 			p_pause_all(true);
 			draw_button(BUTTON_WAIT, true);
-			if (p_end_set)
-				p_paused_time = time_left(&p_end);
+			if (p_end_set) {
+				if (time_after(&p_can_pause_until))
+					p_paused_time = 0;
+				else
+					p_paused_time = time_left(&p_end);
+			}
 			p_waiting = true;
 		}
 	} else {
@@ -356,6 +362,28 @@ static char *process_cmd(struct p_data *pd)
 
 	if (nope)
 		p_send_nope(pd, nope);
+	return NULL;
+}
+
+static char *start_level(char *code)
+{
+	p_level = app_get_level(code);
+	if (!p_level) {
+		log_info("unknown level \"%s\"", code);
+		return P_MSG_LEVL_UNKNOWN;
+	}
+	log_info("level \"%s\"", code);
+	p_code = sstrdup(code);
+	p_bound_max = p_level->max_conn;
+	time_from_now(&p_can_pause_until, CAN_PAUSE_INTERVAL);
+	if (p_level->max_time) {
+		time_from_now(&p_end, p_level->max_time * 1000);
+		p_end_set = true;
+	}
+	p_draw_timer = timer_new(p_draw, NULL, NULL);
+	check(p_draw_timer);
+	timer_arm(p_draw_timer, REDRAW_INTERVAL, true);
+	draw_button(BUTTON_KILL, true);
 	return NULL;
 }
 
@@ -370,22 +398,11 @@ static char *process_level(struct p_data *pd)
 		return P_MSG_CONN_TOO_MANY;
 
 	if (!p_code) {
-		p_level = app_get_level(pd->val);
-		if (!p_level) {
-			log_info("unknown level \"%s\"", pd->val);
-			return P_MSG_LEVL_UNKNOWN;
-		}
-		log_info("level \"%s\"", pd->val);
-		p_code = sstrdup(pd->val);
-		p_bound_max = p_level->max_conn;
-		if (p_level->max_time) {
-			time_from_now(&p_end, p_level->max_time * 1000);
-			p_end_set = true;
-		}
-		p_draw_timer = timer_new(p_draw, NULL, NULL);
-		check(p_draw_timer);
-		timer_arm(p_draw_timer, REDRAW_INTERVAL, true);
-		draw_button(BUTTON_KILL, true);
+		char *res;
+
+		res = start_level(pd->val);
+		if (res)
+			return res;
 	}
 	if (p_level->get_data)
 		pd->data = p_level->get_data();
@@ -511,7 +528,7 @@ void proto_resume(void)
 	p_waiting = false;
 	p_pause_all(false);
 	draw_button(BUTTON_WAIT, false);
-	if (p_end_set)
+	if (p_end_set && p_paused_time)
 		time_from_now(&p_end, p_paused_time);
 }
 
@@ -522,7 +539,7 @@ static int p_draw(int fd, unsigned events, void *data __unused)
 	if (p_end_set) {
 		long left;
 
-		if (p_waiting)
+		if (p_waiting && p_paused_time)
 			left = p_paused_time;
 		else
 			left = time_left(&p_end);
