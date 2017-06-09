@@ -50,14 +50,23 @@ bool time_after(struct timespec *tp)
 	return cache.tv_nsec > tp->tv_nsec;
 }
 
+static long time_diff(struct timespec *tp1, struct timespec *tp2)
+{
+	return (tp1->tv_sec - tp2->tv_sec) * 1000 +
+	       (tp1->tv_nsec - tp2->tv_nsec) / 1000000;
+}
+
 long time_left(struct timespec *tp)
 {
 	long res;
 
-	time_now();
-	res = (tp->tv_sec - cache.tv_sec) * 1000 +
-	      (tp->tv_nsec - cache.tv_nsec) / 1000000;
+	res = time_diff(tp, time_now());
 	if (res < 0)
 		res = 0;
 	return res;
+}
+
+long time_elapsed(struct timespec *tp)
+{
+	return time_diff(time_now(), tp);
 }

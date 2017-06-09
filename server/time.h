@@ -21,7 +21,10 @@ void time_from_now(struct timespec *tp, long milisecs);
 /* Checks whether 'tp' is in the past (i.e. the current time is after 'tp'). */
 bool time_after(struct timespec *tp);
 
-/* Returns number of miliseconds left until 'tp'. */
+/* Returns the number of miliseconds left until 'tp'. */
 long time_left(struct timespec *tp);
+
+/* Returns the number of miliseconds elapsed since 'tp'. */
+long time_elapsed(struct timespec *tp);
 
 #endif
