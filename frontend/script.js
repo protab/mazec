@@ -13,20 +13,8 @@ var globalState = {
     'connectionAttempts': 0
 };
 
-function getUsername() {
-    var username = globalState['username'];
-    if (username === null || username === undefined) {
-        if (window.location.hash) {
-            username = window.location.hash.substring(1);
-        } else {
-            var oldUsername = localStorage.getItem("username");
-            username = prompt("Zadej své uživatelské jméno:", (oldUsername == null ? 'jmeno' : oldUsername));
-        }
-        localStorage.setItem("username", username);
-        globalState['username'] = username;
-    }
-
-    return username;
+function getURL() {
+    return document.getElementById('BASE_URL').innerHTML;
 }
 
 /**************************** RENDERING ***************************************/
@@ -62,7 +50,7 @@ function render(map) {
     if (isConnectionClosed() || map == null) {
         context.strokeText("...", w/2-30, h/2-15);
         handleButtonsAndClock({
-            'time_left': 0,
+            'time_left': 1023,
             'button_end': false,
             'button_start': false
         })
@@ -120,7 +108,7 @@ function setConnectionStatusMsg(msg) {
 }
 
 function init() {
-    var socket = new WebSocket(BASE_URL);
+    var socket = new WebSocket(getURL());
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function() {
@@ -236,7 +224,16 @@ function buttonPress(id) {
     var payload = new ArrayBuffer(1);
     var view = new Uint8Array(payload);
     view[0] = id;
-    socket.send(payload)
+    socket.send(payload);
+
+    switch(id) {
+        case 1:
+            document.getElementById('button_start').style.visibility = 'hidden';
+            break;
+        case 2:
+            document.getElementById('button_end').style.visibility = 'hidden';
+            break;
+    }
 }
 
 function isConnectionClosed() {

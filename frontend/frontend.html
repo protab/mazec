@@ -10,6 +10,12 @@
         <script src="script.js"></script>
     </head>
     <body onload="init()">
+
+        <!-- Může být kdekoliv v čemkoliv, jen musí zůstat zachováno id -->
+        <div style="display: none" id="BASE_URL">
+            ws://localhost:1234/vasek
+        </div>
+
         <!--[if lt IE 8]>
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
@@ -20,7 +26,7 @@
             <div class="center canvas-container">
                 <canvas id="canvas" width="495" height="495"></canvas>
             </div>
-            <button class="center gbutton" id="button_start" onclick="buttonPress(1)">Start</button>
+            <button class="center gbutton" id="button_start" onclick="buttonPress(1)">Spustit</button>
             <button class="center gbutton" id="button_end" onclick="buttonPress(2)">Ukončit</button>
             <footer>
                 <span id="connection_status_msg"></span>

@@ -55,8 +55,8 @@ body {
   border: 0.4vmin solid black;
 }
 
-#button_end #button_start {
-  visibility: invisible;
+#button_end #button_start #clock {
+  visibility: hidden;
 }
 
 footer { /* 6.4 */
