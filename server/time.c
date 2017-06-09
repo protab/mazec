@@ -29,6 +29,9 @@ void time_add(struct timespec *tp, long milisecs)
 	if (tp->tv_nsec >= 1000000000) {
 		tp->tv_nsec -= 1000000000;
 		secs++;
+	} else if (tp->tv_nsec < 0) {
+		tp->tv_nsec += 1000000000;
+		secs--;
 	}
 	tp->tv_sec += secs;
 }
