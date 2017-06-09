@@ -16,6 +16,7 @@
 #include "ipc.h"
 #include "log.h"
 #include "socket.h"
+#include "time.h"
 
 #define BUF_SIZE	1024
 #define CMD_LEN		4

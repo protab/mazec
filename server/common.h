@@ -1,8 +1,6 @@
 #ifndef COMMON_H
 #define COMMON_H
-#include <stdbool.h>
 #include <stdlib.h>
-#include <time.h>
 
 #define __unused	__attribute__((unused))
 
@@ -19,11 +17,5 @@ void sfree(void *ptr);
 void rstrip(char *s);
 size_t strlcpy(char *dest, const char *src, size_t size);
 char *sstrdup(const char *s);
-
-/* Time calculations */
-struct timespec *time_now(struct timespec *tp);
-void time_add(struct timespec *tp, long milisecs);
-bool time_after(struct timespec *tp);
-long time_left(struct timespec *tp);
 
 #endif

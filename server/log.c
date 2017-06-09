@@ -8,6 +8,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "common.h"
+#include "time.h"
 
 const char *level_desc[__LOG_LEVEL_MAX] = { "INFO", "WARN", "ERR!" };
 

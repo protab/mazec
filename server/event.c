@@ -17,6 +17,7 @@
 #include "db.h"
 #include "log.h"
 #include "spawn.h"
+#include "time.h"
 
 struct fd_data {
 	int fd;
