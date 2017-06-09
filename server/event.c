@@ -260,6 +260,7 @@ int event_loop(void)
 		/* re-check as a destructor may have called event_quit */
 		if (quit)
 			break;
+		time_flush_cache();
 		cnt = epoll_wait(epfd, evbuf, EVENTS_MAX, -1);
 		if (cnt < 0) {
 			if (errno == EINTR)

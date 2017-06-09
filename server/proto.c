@@ -379,7 +379,7 @@ static char *process_level(struct p_data *pd)
 		p_code = sstrdup(pd->val);
 		p_bound_max = p_level->max_conn;
 		if (p_level->max_time) {
-			time_add(time_now(&p_end), p_level->max_time * 1000);
+			time_from_now(&p_end, p_level->max_time * 1000);
 			p_end_set = true;
 		}
 		p_draw_timer = timer_new(p_draw, NULL, NULL);
@@ -512,7 +512,7 @@ void proto_resume(void)
 	p_pause_all(false);
 	draw_button(BUTTON_WAIT, false);
 	if (p_end_set)
-		time_add(time_now(&p_end), p_paused_time);
+		time_from_now(&p_end, p_paused_time);
 }
 
 static int p_draw(int fd, unsigned events, void *data __unused)
