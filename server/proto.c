@@ -463,7 +463,6 @@ void proto_client_init(proto_close_cb_t close_cb)
 	p_waiting = false;
 }
 
-/* Calls the close callback if there is no app socket open. */
 void proto_cond_close(void)
 {
 	if (!p_count && p_close_cb)
@@ -491,7 +490,6 @@ static void p_free(void *data)
 		p_close_cb();
 }
 
-/* Closes the fd even if unsuccessful. */
 int proto_client_add(int fd, bool crlf)
 {
 	struct p_data *pd;

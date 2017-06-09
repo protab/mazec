@@ -29,7 +29,10 @@ void event_quit(void);
 
 int timer_new(event_callback_t cb, void *cb_data,
 	      cb_data_destructor_t cb_destructor);
+
+/* pass 0 in milisecs to disarm */
 int timer_arm(int fd, int milisecs, bool repeat);
+
 int timer_snooze(int fd);
 int timer_del(int fd);
 

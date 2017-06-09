@@ -16,7 +16,6 @@ void spawn_init(int __unused argc, char **argv)
 	prg_path = sstrdup(argv[0]);
 }
 
-/* The caller is responsible for checking that the given login exists. */
 int spawn(const char *login)
 {
 	pid_t pid;

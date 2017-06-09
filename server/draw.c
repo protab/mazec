@@ -112,7 +112,6 @@ void draw_commit(void)
 		draw_force_commit();
 }
 
-/* -1 seconds means infinity */
 void draw_seconds(int seconds_)
 {
 	if (seconds_ == seconds)

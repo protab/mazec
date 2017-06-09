@@ -12,6 +12,8 @@ enum {
 
 void log_init(const char *name);
 int log_msg(int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
+
+/* Needs to be terminated by calling with size == 0. */
 void log_raw(char *buf, size_t size);
 
 #define log_info(...)	log_msg(INFO, __VA_ARGS__)

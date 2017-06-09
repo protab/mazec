@@ -54,7 +54,6 @@ int log_msg(int level, const char *format, ...)
 	return 0;
 }
 
-/* Needs to be terminated by calling with size == 0. */
 void log_raw(char *buf, size_t size)
 {
 	static bool need_nl = false;

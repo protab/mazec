@@ -303,7 +303,6 @@ int timer_new(event_callback_t cb, void *cb_data,
 	return fd;
 }
 
-/* pass 0 in milisecs to disarm */
 int timer_arm(int fd, int milisecs, bool repeat)
 {
 	struct itimerspec its;
