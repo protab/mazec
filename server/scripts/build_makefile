@@ -7,6 +7,11 @@ for f in level_*.c; do
 	list="$list $code.so"
 
 	objs=($(sed -n 's/^[ \t]*#[ \t]*include[ \t]\+"\([^.]*\)\.h".*/\1.o/p' "$f"))
+	libs=()
+	grep -q '^[ \t]*#[ \t]*include[ \t]\+<math\.h>.*' "$f" && libs+=(-lm)
+
 	echo "$code.so: ${f%.c}.o" "${objs[@]}"
+	echo '	gcc $(LDFLAGS) -o $@ $+' "${libs[@]}"
+	echo
 done >> Makefile
 echo "all2:$list" >> Makefile
