@@ -1,5 +1,3 @@
-#include <stdbool.h>
-#include <stdlib.h>
 #include "../level.h"
 #include "simple.h"
 

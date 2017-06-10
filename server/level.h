@@ -1,6 +1,7 @@
 #ifndef LEVEL_H
 #define LEVEL_H
 #include <stdbool.h>
+#include <stdlib.h>
 
 /* The access code for the level. Each level must call this macro. */
 #define LEVEL_CODE(code)
