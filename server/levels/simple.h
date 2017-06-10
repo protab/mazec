@@ -22,7 +22,7 @@ struct simple_data {
  * position of the player(s) in the array. 'priv_size' is the size of the
  * private data to allocate for each player, this must include struct
  * simple_data size. */
-void simple_init(int width, int height, unsigned char *level,
+void simple_init(int width, int height, const unsigned char *level,
 		 int start_x, int start_y, unsigned priv_size);
 
 /* These must be set as the level's 'get_data' and 'free_data' callbacks or

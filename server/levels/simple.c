@@ -10,13 +10,14 @@
 static int width, height, start_x, start_y;
 static int origin_x, origin_y;
 static unsigned priv_size;
-static unsigned char *level_data, *level_copy;
+static const unsigned char *level_data;
+static unsigned char *level_copy;
 static struct simple_data *first;
 
 #define BORDER	5
 static void update_viewport(void);
 
-void simple_init(int width_, int height_, unsigned char *level,
+void simple_init(int width_, int height_, const unsigned char *level,
 		 int start_x_, int start_y_, unsigned priv_size_)
 {
 	width = width_;
