@@ -133,6 +133,41 @@ void simple_set_xy(void *data, int x, int y, int angle)
 	level_dirty();
 }
 
+char *simple_move(void *data, char c, bool *win)
+{
+	struct simple_data *d = data;
+	int sx = 0, sy = 0;
+	unsigned char col;
+
+	*win = false;
+
+	switch (c) {
+	case 'w':
+		sy = -1;
+		break;
+	case 's':
+		sy = 1;
+		break;
+	case 'a':
+		sx = -1;
+		break;
+	case 'd':
+		sx = 1;
+		break;
+	default:
+		return A_MSG_UNKNOWN_MOVE;
+	}
+	col = level_data[((d->y + sy) * width) + (d->x + sx)];
+	if (col == COLOR_TREASURE) {
+		*win = true;
+		return A_MSG_WIN;
+	} else if (col != COLOR_NONE) {
+		return A_MSG_WALL_HIT;
+	}
+	simple_set_xy(data, d->x + sx, d->y + sy, 0);
+	return NULL;
+}
+
 static int find_max(int *data, int len)
 {
 	int max = INT_MIN, res = 0;

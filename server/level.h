@@ -73,6 +73,7 @@ enum {
 	COLOR_NONE,
 	COLOR_PLAYER,
 	COLOR_WALL,
+	COLOR_TREASURE,
 };
 
 /* Mark the remote screen as dirty. Call whenever there's a change to the

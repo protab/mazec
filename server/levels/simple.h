@@ -1,5 +1,6 @@
 #ifndef SIMPLE_H
 #define SIMPLE_H
+#include <stdbool.h>
 
 /* Easy implementation of simple levels. All objects must be in the basic
  * grid (i.e. coordinates are multiple of 15). The grid must be statically
@@ -45,5 +46,10 @@ void simple_redraw(void);
 /* Move the player. This must be called instead of altering the 'x', 'y' and
  * 'angle' fields directly. */
 void simple_set_xy(void *data, int x, int y, int angle);
+
+/* The simplest levels may use this as the 'move' callback. It handles only
+ * walls and treasure. If you need anything more, you need to implement your
+ * own 'move' handler. */
+char *simple_move(void *data, char c, bool *win);
 
 #endif
