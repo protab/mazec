@@ -1,4 +1,36 @@
 #!/bin/bash
+
+function get_h()
+{
+	local objs=($(sed -n 's/^[ \t]*#[ \t]*include[ \t]\+"\([^.]*\)\.h".*/\1.o/p' "$1"))
+	echo "${objs[@]}"
+}
+
+function in_array()
+{
+	local x
+	for x in "${@:2}"; do
+		[[ "$x" = "$1" ]] && return 0
+	done
+	return 1
+}
+
+function get_deps_recurse()
+{
+	local u
+	for u in $(get_h "$1"); do
+		in_array "$u" "${deps[@]}" && continue
+		deps+=($u)
+		get_deps_recurse "${u%.o}.h"
+	done
+}
+
+function get_deps()
+{
+	deps=()
+	get_deps_recurse "$1"
+}
+
 cp Makefile.t Makefile
 list=
 for f in level_*.c; do
@@ -6,11 +38,11 @@ for f in level_*.c; do
 	[[ -z $code ]] && continue
 	list="$list $code.so"
 
-	objs=($(sed -n 's/^[ \t]*#[ \t]*include[ \t]\+"\([^.]*\)\.h".*/\1.o/p' "$f"))
+	get_deps "$f"
 	libs=()
 	grep -q '^[ \t]*#[ \t]*include[ \t]\+<math\.h>.*' "$f" && libs+=(-lm)
 
-	echo "$code.so: ${f%.c}.o" "${objs[@]}"
+	echo "$code.so: ${f%.c}.o" "${deps[@]}"
 	echo '	gcc $(LDFLAGS) -o $@ $+' "${libs[@]}"
 	echo
 done >> Makefile
