@@ -75,6 +75,27 @@ static bool strip_nl(char *s)
 	return false;
 }
 
+/* When 'stream' is not NULL, works like fgets. If 'stream' is NULL, returns
+ * a default line, "test\n" and then EOF. To reset EOF condition, call with
+ * null 'stream' and negative 'size'. */
+static char *fgets_default(char *s, int size, FILE *stream)
+{
+	static bool done;
+
+	if (!stream) {
+		if (size < 0) {
+			done = false;
+			return NULL;
+		}
+		if (done)
+			return NULL;
+		strlcpy(s, "test\n", size);
+		done = true;
+		return s;
+	}
+	return fgets(s, size, stream);
+}
+
 int db_reload(void)
 {
 	FILE *f;
@@ -87,15 +108,17 @@ int db_reload(void)
 		return 0;
 	log_info("reloading db from %s", DB_PATH);
 	f = fopen(DB_PATH, "r");
-	if (!f)
-		return -errno;
+	if (!f) {
+		log_err("cannot open db file %s, using default user", DB_PATH);
+		fgets_default(NULL, -1, NULL);
+	}
 
 	ptr = get_last_ptr(&inactive, &cnt_before);
 	*ptr = users;
 	users = NULL;
 	last = &users;
 
-	while (fgets(login, sizeof(login), f)) {
+	while (fgets_default(login, sizeof(login), f)) {
 		bool consume;
 
 		consume = !strip_nl(login);
@@ -126,12 +149,13 @@ int db_reload(void)
 		}
 
 		while (consume) {
-			if (!fgets(login, sizeof(login), f))
+			if (!fgets_default(login, sizeof(login), f))
 				break;
 			consume = !strip_nl(login);
 		}
 	}
-	fclose(f);
+	if (f)
+		fclose(f);
 
 	get_last_ptr(&inactive, &cnt_after);
 	log_info("new users: %d, inactive users before/after: %d/%d",
