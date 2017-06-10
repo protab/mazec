@@ -2,11 +2,11 @@
 cp Makefile.t Makefile
 list=
 for f in level_*.c; do
-	code=$(sed -n 's/^[ \t]*LEVEL_CODE[ \t]*([ \t]*"\([^"]*\).*/\1/p' "$f")
+	code=$(sed -n 's/^[ \t]*LEVEL_CODE[ \t]*([ \t]*"\([^"]*\)".*/\1/p' "$f")
 	[[ -z $code ]] && continue
 	list="$list $code.so"
 
-	objs=($(sed -n 's/^#include "\([^.]*\)\.h".*/\1.o/p' "$f"))
+	objs=($(sed -n 's/^[ \t]*#[ \t]*include[ \t]\+"\([^.]*\)\.h".*/\1.o/p' "$f"))
 	echo "$code.so: ${f%.c}.o" "${objs[@]}"
 done >> Makefile
 echo "all2:$list" >> Makefile
