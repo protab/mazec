@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "log.h"
 
 void emerg_exit(const char *path, int line, int code)
@@ -92,4 +93,12 @@ char *sstrdup(const char *s)
 	if (!res)
 		alloc_err(strlen(s));
 	return res;
+}
+
+void randomize(void)
+{
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	srandom(ts.tv_nsec ^ ts.tv_sec);
 }

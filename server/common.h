@@ -18,4 +18,6 @@ void rstrip(char *s);
 size_t strlcpy(char *dest, const char *src, size_t size);
 char *sstrdup(const char *s);
 
+void randomize(void);
+
 #endif
