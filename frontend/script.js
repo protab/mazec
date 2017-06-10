@@ -62,7 +62,12 @@ function render(map) {
     // draw tiles
     for (var i in map.tiles) {
         var coords = getTileCoords(i, map.header);
-        context.drawImage(globalState.images[map.tiles[i]], coords[0], coords[1])
+        try {
+            context.drawImage(globalState.images[map.tiles[i]], coords[0], coords[1])
+        } catch (e) {
+            var missing = document.getElementById("missing");
+            context.drawImage(missing, coords[0], coords[1]);
+        }
     }
 
     // draw floating tiles
@@ -76,7 +81,12 @@ function render(map) {
 
         context.translate(x, y);
         context.rotate(angle);
-        context.drawImage(image, -width / 2, -height / 2, width, height);
+        try {
+            context.drawImage(image, -width / 2, -height / 2, width, height);
+        } catch (e) {
+            var missing = document.getElementById("missing");
+            context.drawImage(missing, -width / 2, -height / 2, width, height);
+        }
         context.rotate(-angle);
         context.translate(-x, -y);
     }
@@ -258,6 +268,8 @@ function reloadConnectionButtonText() {
 function onConnectionButtonClick() {
     var button = document.getElementById('connection_control');
     var socket = globalState['socket'];
+
+    globalState.connectionAttempts = 42;  // magic number
 
     if (isConnectionClosed()) {
         setTimeout(init, 50);
