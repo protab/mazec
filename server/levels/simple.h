@@ -1,28 +1,20 @@
 #ifndef SIMPLE_H
 #define SIMPLE_H
+#include "grid.h"
 #include "../level.h"
 
 /* Easy implementation of simple levels. All objects must be in the basic
- * grid (i.e. coordinates are multiple of 15). The grid must be statically
- * generated. It may be of any size. Supports multiple connections
- * (players), the screen is positioned automatically to contain as much
- * players as possible. Each player starts at the same position. */
+ * grid. Supports multiple players, the screen is positioned automatically
+ * to contain as much players as possible. For other limitations, see
+ * grid.h. */
 
-/* Private data must start with this struct embdedded: */
-struct simple_data {
-	int x;
-	int y;
-	int angle;
-	struct simple_data *next;
-};
+/* Private data must start with struct simple_data embedded. Currently, this
+ * is equivalent to struct grid_data but don't rely on that. */
+#define simple_data grid_data
 
 /* Initialize the level. This must be called from the level's 'init'
  * callback.
- * The 'level' array contains the level data, 'width' and 'height' is the
- * size of the 'level' array. 'start_x' and 'start_y' is the initial
- * position of the player(s) in the array. 'priv_size' is the size of the
- * private data to allocate for each player, this must include struct
- * simple_data size. */
+ * See grid_init for description of the parameters. */
 void simple_init(int width, int height, const unsigned char *level,
 		 int start_x, int start_y, unsigned priv_size);
 
@@ -47,15 +39,7 @@ void simple_redraw(void);
  * 'angle' fields directly. */
 void simple_set_xy(void *data, int x, int y, int angle);
 
-/* Try to move. Returns true if the player was moved; there's nothing to do
- * in such case. Returns false if the player was not moved. In that case,
- * 'err' contains either an error message or NULL. If it contains an error
- * message, move was not possible because of a wall or out of borders. It
- * can be also a winning message if the move reached a treasure ('win' is
- * set accordingly). If the move was in bounds but would move to something
- * that is not a wall or empty space, 'err' contains NULL and the new
- * coordinates are stored in 'new_x' and 'new_y' (without the player being
- * moved). */
+/* Try to move. See grid_try_move for description of pamaters. */
 bool simple_try_move(void *data, char c, bool *win, char **err,
 		     int *new_x, int *new_y);
 
@@ -79,8 +63,7 @@ char *simple_o_move(void *data, char c, bool *win);
 	static void name(void)						\
 	{								\
 		simple_init(width, height, level_data,			\
-			    start_x, start_y,				\
-			    sizeof(struct simple_data));		\
+			    start_x, start_y, 0);			\
 	}
 
 #define SIMPLE_DEFINE(max_conn_, max_time_, init_, move_)		\

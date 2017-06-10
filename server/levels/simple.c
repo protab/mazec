@@ -7,28 +7,24 @@
 #include "../level.h"
 #include "../proto_msg.h"
 
-static int width, height, start_x, start_y;
+static int width, height;
 static int origin_x, origin_y;
-static unsigned priv_size;
 static const unsigned char *level_data;
 static unsigned char *level_copy;
-static struct simple_data *first;
 
 #define BORDER	5
 static void update_viewport(void);
 
 void simple_init(int width_, int height_, const unsigned char *level,
-		 int start_x_, int start_y_, unsigned priv_size_)
+		 int start_x, int start_y, unsigned priv_size)
 {
+	grid_init(width_, height_, level, start_x, start_y, priv_size);
+
 	width = width_;
 	height = height_;
-	start_x = start_x_;
-	start_y = start_y_;
-	priv_size = priv_size_;
 	level_data = level;
 
 	level_copy = salloc(width * height);
-	first = NULL;
 
 	origin_x = start_x - (DRAW_MOD_WIDTH + 1) / 2;
 	origin_y = start_y - (DRAW_MOD_HEIGHT + 1) / 2;
@@ -36,14 +32,9 @@ void simple_init(int width_, int height_, const unsigned char *level,
 
 void *simple_get_data(void)
 {
-	struct simple_data *d, **ptr;
+	struct simple_data *d;
 
-	d = szalloc(priv_size);
-	d->x = start_x;
-	d->y = start_y;
-	for (ptr = &first; *ptr; ptr = &(*ptr)->next)
-		;
-	*ptr = d;
+	d = grid_get_data();
 	update_viewport();
 	level_dirty();
 	return d;
@@ -51,12 +42,7 @@ void *simple_get_data(void)
 
 void simple_free_data(void *data)
 {
-	struct simple_data *d = data, **ptr;
-
-	for (ptr = &first; *ptr != d; ptr = &(*ptr)->next)
-		;
-	*ptr = d->next;
-	free(d);
+	grid_free_data(data);
 }
 
 char *simple_what(void *data __unused, int x, int y, int *res)
@@ -66,7 +52,7 @@ char *simple_what(void *data __unused, int x, int y, int *res)
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return A_MSG_OUT_OF_MAZE;
 
-	for (d = first; d; d = d->next) {
+	for_each_player(d) {
 		if (d->x == x && d->y == y) {
 			*res = COLOR_PLAYER;
 			return NULL;
@@ -82,8 +68,9 @@ char *simple_maze(void *data __unused, unsigned char **res, unsigned *len)
 	struct simple_data *d;
 
 	memcpy(level_copy, level_data, width * height);
-	for (d = first; d; d = d->next)
+	for_each_player(d) {
 		level_copy[d->y * width + d->x] = COLOR_PLAYER;
+	}
 
 	*res = level_copy;
 	*len = width * height;
@@ -133,53 +120,12 @@ bool simple_try_move(void *data, char c, bool *win, char **err,
 		     int *new_x, int *new_y)
 {
 	struct simple_data *d = data;
-	int nx, ny;
-	unsigned char col;
+	bool res;
 
-	*win = false;
-	*err = NULL;
-
-	nx = d->x;
-	ny = d->y;
-
-	switch (c) {
-	case 'w':
-		ny--;
-		break;
-	case 's':
-		ny++;
-		break;
-	case 'a':
-		nx--;
-		break;
-	case 'd':
-		nx++;
-		break;
-	default:
-		*err = A_MSG_UNKNOWN_MOVE;
-		return false;
-	}
-	if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
-		*err = A_MSG_OUT_OF_MAZE;
-		return false;
-	}
-
-	col = level_data[ny * width + nx];
-	if (col == COLOR_NONE) {
-		simple_set_xy(data, nx, ny, 0);
-		return true;
-	} else if (col == COLOR_WALL) {
-		*err = A_MSG_WALL_HIT;
-		return false;
-	} else if (col == COLOR_TREASURE) {
-		*win = true;
-		*err = A_MSG_WIN;
-		return false;
-	} else {
-		*new_x = nx;
-		*new_y = ny;
-		return false;
-	}
+	res = grid_try_move(data, c, win, err, new_x, new_y);
+	if (res)
+		simple_set_xy(data, d->x, d->y, d->angle);
+	return res;
 }
 
 char *simple_move(void *data, char c, bool *win)
@@ -198,64 +144,12 @@ bool simple_try_o_move(void *data, char c, bool *win, char **err,
 		       int *new_x, int *new_y)
 {
 	struct simple_data *d = data;
-	unsigned char col;
-	int nx, ny;
+	bool res;
 
-	*win = false;
-	*err = NULL;
-
-	nx = d->x;
-	ny = d->y;
-
-	switch (c) {
-	case 'w':
-		break;
-	case 'a':
-		simple_set_xy(data, nx, ny, (d->angle + 90) % 360);
-		return true;
-	case 'd':
-		simple_set_xy(data, nx, ny, (d->angle + 270) % 360);
-		return true;
-	default:
-		*err = A_MSG_UNKNOWN_MOVE;
-		return false;
-	}
-
-	switch (d->angle) {
-	case 0:
-		ny--;
-		break;
-	case 90:
-		nx--;
-		break;
-	case 180:
-		ny++;
-		break;
-	case 270:
-		nx++;
-		break;
-	}
-	if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
-		*err = A_MSG_OUT_OF_MAZE;
-		return false;
-	}
-
-	col = level_data[ny * width + nx];
-	if (col == COLOR_NONE) {
-		simple_set_xy(data, nx, ny, d->angle);
-		return true;
-	} else if (col == COLOR_WALL) {
-		*err = A_MSG_WALL_HIT;
-		return false;
-	} else if (col == COLOR_TREASURE) {
-		*win = true;
-		*err = A_MSG_WIN;
-		return false;
-	} else {
-		*new_x = nx;
-		*new_y = ny;
-		return false;
-	}
+	res = grid_try_o_move(data, c, win, err, new_x, new_y);
+	if (res)
+		simple_set_xy(data, d->x, d->y, d->angle);
+	return res;
 }
 
 char *simple_o_move(void *data, char c, bool *win)
@@ -292,7 +186,7 @@ static void update_viewport(void)
 	/* see what happens to number of visible players when we move in
 	 * each direction */
 	memset(shifts, 0, sizeof(shifts));
-	for (d = first; d; d = d->next) {
+	for_each_player(d) {
 		if (d->y == origin_y + DRAW_MOD_HEIGHT - 1)
 			shifts[0]--;
 		else if (d->y == origin_y - 1)
@@ -317,7 +211,7 @@ static void update_viewport(void)
 		/* the number of visible players stay the same; look whether
 		 * we can improve the viewport location by keeping a border */
 		memset(shifts, 0, sizeof(shifts));
-		for (d = first; d; d = d->next) {
+		for_each_player(d) {
 			if (d->x < origin_x || d->x >= origin_x + DRAW_MOD_WIDTH ||
 			    d->y < origin_y || d->y >= origin_y + DRAW_MOD_HEIGHT)
 				continue;
@@ -390,6 +284,7 @@ void simple_redraw(void)
 		for (x = x_min; x < x_max; x++)
 			draw_item(x * DRAW_MOD, y * DRAW_MOD, 0,
 				  level_data[y * width + x]);
-	for (d = first; d; d = d->next)
+	for_each_player(d) {
 		draw_item(d->x * DRAW_MOD, d->y * DRAW_MOD, d->angle, COLOR_PLAYER);
+	}
 }
