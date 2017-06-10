@@ -421,8 +421,10 @@ static char *process_user(struct p_data *pd)
 	if (strcmp(pd->cmd, "USER"))
 		return P_MSG_USER_EXPECTED;
 
-	if (!db_user_exists(pd->val))
+	if (!db_user_exists(pd->val)) {
+		log_info("user \"%s\" not found", pd->val);
 		return P_MSG_USER_UNKNOWN;
+	}
 
 	ipc_send_socket(pd->val, pd->s, pd->crlf ? IPC_FD_APP_CRLF : IPC_FD_APP_LF);
 	return NULL;
