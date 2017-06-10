@@ -365,6 +365,18 @@ static char *process_cmd(struct p_data *pd)
 	return NULL;
 }
 
+static bool valid_identifier(char *val)
+{
+	for (; *val; val++) {
+		if (*val >= 'a' && *val <= 'z')
+			continue;
+		if (*val >= '0' && *val <= '9')
+			continue;
+		return false;
+	}
+	return true;
+}
+
 static char *start_level(char *code)
 {
 	p_level = app_get_level(code);
@@ -391,6 +403,8 @@ static char *process_level(struct p_data *pd)
 {
 	if (strcmp(pd->cmd, "LEVL"))
 		return P_MSG_LEVL_EXPECTED;
+	if (!valid_identifier(pd->val))
+		return P_MSG_LEVL_BAD_CHARS;
 
 	if (p_code && strcmp(pd->val, p_code))
 		return P_MSG_LEVL_NOT_MATCHING;

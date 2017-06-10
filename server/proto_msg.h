@@ -12,6 +12,7 @@
 #define P_MSG_USER_EXPECTED	"Komunikace musi zacit prikazem USER."
 #define P_MSG_USER_UNKNOWN	"Tento uzivatel neexistuje."
 #define P_MSG_LEVL_EXPECTED	"Druhy prikaz komunikace musi byt LEVL."
+#define P_MSG_LEVL_BAD_CHARS	"Kod levelu smi obsahovat jen mala pismena a cislice."
 #define P_MSG_LEVL_NOT_MATCHING	"Jiz bezi spojeni pro jinou ulohu. Nelze resit dve ulohy najednou."
 #define P_MSG_LEVL_UNKNOWN	"Uloha s timto kodem neexistuje."
 #define P_MSG_TIMEOUT		"Vyprsel cas pro reseni teto ulohy."
