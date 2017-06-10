@@ -72,12 +72,12 @@ static void ws_write(struct socket *s, unsigned opcode, void *buf, size_t size)
 		hdr[1] = 126;
 		payload_enc_len = 2;
 	} else {
-		hdr[2] = 127;
+		hdr[1] = 127;
 		payload_enc_len = 4;
 	}
 	tmp = size;
 	for (int i = payload_enc_len - 1; i >= 0; i--) {
-		hdr[3 + i] = tmp & 0xff;
+		hdr[2 + i] = tmp & 0xff;
 		tmp >>= 8;
 	}
 
