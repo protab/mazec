@@ -25,9 +25,13 @@ const struct level_ops *app_get_level(char *code)
 	pos += strlcpy(path + pos, code, MAX_PATH_LEN - pos);
 	pos += strlcpy(path + pos, ".so", MAX_PATH_LEN - pos);
 	handle = dlopen(path, RTLD_NOW);
-	if (!handle)
+	err = dlerror();
+	if (!handle) {
+		log_info("library load error: %s", err);
 		return NULL;
-	dlerror();
+	}
+	/* Need to call dlerror() before calling dlsym() to clear any
+	 * possible previous error condition. We do that above. */
 	ops = dlsym(handle, "level_ops");
 	err = dlerror();
 	if (err || !ops) {
