@@ -495,12 +495,15 @@ int proto_client_add(int fd, bool crlf)
 	struct p_data *pd;
 
 	pd = szalloc(sizeof(*pd));
+
 	pd->s = socket_add(fd, p_read, pd, p_free);
 	if (!pd->s) {
 		sfree(pd);
 		close(fd);
 		return -ENOTSOCK;
 	}
+	socket_set_ratelimit(pd->s);
+
 	pd->process = process_level;
 	pd->crlf = crlf;
 

@@ -25,6 +25,10 @@ void socket_set_write_done_cb(struct socket *s, socket_cb_read_t cb_write_done);
  * Returns the file descriptor. */
 int socket_set_unmanaged(struct socket *s);
 
+/* Sets the socket as rate limited. The rate limit is fixed, applies per
+ * socket and cannot be configured. */
+void socket_set_ratelimit(struct socket *s);
+
 int socket_stop_reading(struct socket *s);
 int socket_pause(struct socket *s, bool pause);
 

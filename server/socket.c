@@ -12,6 +12,7 @@
 #include "common.h"
 #include "event.h"
 #include "log.h"
+#include "time.h"
 
 struct msg {
 	void *buf;
@@ -25,8 +26,11 @@ struct msg {
 struct socket {
 	int refs;
 	int fd;
+	int rate_limit_timer;
 	bool dead;
 	bool should_close;
+	bool rate_limit_okay;
+	struct timespec last_xmit;
 	socket_cb_read_t cb_read;
 	socket_cb_read_t cb_write_done;
 	void *cb_data;
@@ -37,8 +41,17 @@ struct socket {
 
 #define WQUEUE_MAX_LEN	20
 
+/* Token bucket rate limiter values: */
+#define RATE		6000	/* in bytes per second */
+#define BUCKET_SIZE	3000	/* in bytes */
+
 static void socket_process_wqueue(struct socket *s);
 static void socket_del_wqueue(struct socket *s);
+
+static bool rate_limited(struct socket *s)
+{
+	return s->rate_limit_timer >= 0;
+}
 
 static int socket_cb(int fd, unsigned events, void *data)
 {
@@ -56,11 +69,25 @@ static int socket_cb(int fd, unsigned events, void *data)
 	return 0;
 }
 
+static int socket_ratelimit_cb(int fd, unsigned events, void *data)
+{
+	struct socket *s = data;
+
+	if (!(events & EV_READ))
+		return 0;
+	timer_snooze(fd);
+	event_change_fd_add(s->fd, EV_WRITE);
+	s->rate_limit_okay = true;
+	return 0;
+}
+
 static void socket_kill(void *data)
 {
 	struct socket *s = data;
 
 	s->dead = true;
+	if (rate_limited(s))
+		timer_del(s->rate_limit_timer);
 	socket_unref(s);
 }
 
@@ -72,6 +99,7 @@ struct socket *socket_add(int fd, socket_cb_read_t cb_read, void *cb_data,
 	s = salloc(sizeof(*s));
 	s->refs = 1;
 	s->fd = fd;
+	s->rate_limit_timer = -1;
 	s->dead = false;
 	s->should_close = true;
 	s->cb_read = cb_read;
@@ -96,6 +124,32 @@ int socket_set_unmanaged(struct socket *s)
 {
 	s->should_close = false;
 	return s->fd;
+}
+
+static int socket_get_bucket(struct socket *s)
+{
+	long t = time_elapsed(&s->last_xmit) * RATE / 1000;
+	if (t > BUCKET_SIZE)
+		t = BUCKET_SIZE;
+	if (t < 0)
+		/* should not happen */
+		t = 0;
+	return t;
+}
+
+static void socket_set_bucket(struct socket *s, int bucket)
+{
+	s->last_xmit = *time_now();
+	time_add(&s->last_xmit, -(bucket * 1000 / RATE));
+}
+
+void socket_set_ratelimit(struct socket *s)
+{
+	if (rate_limited(s))
+		return;
+	s->rate_limit_timer = timer_new(socket_ratelimit_cb, s, NULL);
+	socket_set_bucket(s, BUCKET_SIZE);
+	s->rate_limit_okay = false;
 }
 
 int socket_get_fd(struct socket *s)
@@ -266,6 +320,22 @@ static void socket_process_wqueue(struct socket *s)
 		struct msghdr mh;
 		struct iovec iov;
 		ssize_t written;
+		int bucket = 0;
+
+		if (rate_limited(s) && !s->rate_limit_okay) {
+			bucket = socket_get_bucket(s);
+			if (m->size > (unsigned)bucket) {
+				long msec;
+
+				msec = (m->size - bucket) * 1000 / RATE;
+				if (msec <= 0)
+					msec = 1;
+				event_change_fd_remove(s->fd, EV_WRITE);
+				timer_arm(s->rate_limit_timer, msec, false);
+				return;
+			}
+			bucket -= m->size;
+		}
 
 		iov.iov_base = m->buf + m->start;
 		iov.iov_len = m->size;
@@ -297,9 +367,15 @@ static void socket_process_wqueue(struct socket *s)
 			s->wqueue_len--;
 			sfree(m->buf);
 			sfree(m);
+			if (rate_limited(s)) {
+				s->rate_limit_okay = false;
+				socket_set_bucket(s, bucket);
+			}
 		} else {
 			m->size -= written;
 			m->start += written;
+			if (rate_limited(s) && !s->rate_limit_okay)
+				socket_set_bucket(s, bucket + m->size);
 			return;
 		}
 	}
