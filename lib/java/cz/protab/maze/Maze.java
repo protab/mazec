@@ -127,10 +127,9 @@ public class Maze implements MazeMap, AutoCloseable {
     public MazeMap getAllValues() {
         final int width = getWidth();
         final int height = getHeight();
-        final int size = width * height;
 
         String response = command("MAZE");
-        assertFormat("DATA ([0-9]+)( [0-9]+){" + (size - 1) + "}", response);
+        assertFormat("DATA [0-9 ]+", response);
         return new PreparsedMazeMap(width, height, response.substring(5));
     }
 
