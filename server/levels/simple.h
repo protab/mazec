@@ -59,10 +59,19 @@ void simple_set_xy(void *data, int x, int y, int angle);
 bool simple_try_move(void *data, char c, bool *win, char **err,
 		     int *new_x, int *new_y);
 
+/* Try to move, rotating player on left/right keys. The parameters are
+ * identical to the simple_try_move helper. */
+bool simple_try_o_move(void *data, char c, bool *win, char **err,
+		       int *new_x, int *new_y);
+
 /* The simplest levels may use this as the 'move' callback. It handles only
  * walls and treasure. If you need anything more, you need to implement your
  * own 'move' handler (see the simple_try_move helper). */
 char *simple_move(void *data, char c, bool *win);
+
+/* Usable as the 'move' callback with the same limitations as simple_move.
+ * The player changes its orientation on left/right keys. */
+char *simple_o_move(void *data, char c, bool *win);
 
 /* Macros for easy definition of levels. */
 

@@ -133,32 +133,40 @@ bool simple_try_move(void *data, char c, bool *win, char **err,
 		     int *new_x, int *new_y)
 {
 	struct simple_data *d = data;
-	int sx = 0, sy = 0;
+	int nx, ny;
 	unsigned char col;
 
 	*win = false;
+	*err = NULL;
+
+	nx = d->x;
+	ny = d->y;
 
 	switch (c) {
 	case 'w':
-		sy = -1;
+		ny--;
 		break;
 	case 's':
-		sy = 1;
+		ny++;
 		break;
 	case 'a':
-		sx = -1;
+		nx--;
 		break;
 	case 'd':
-		sx = 1;
+		nx++;
 		break;
 	default:
 		*err = A_MSG_UNKNOWN_MOVE;
 		return false;
 	}
-	col = level_data[((d->y + sy) * width) + (d->x + sx)];
+	if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
+		*err = A_MSG_OUT_OF_MAZE;
+		return false;
+	}
+
+	col = level_data[ny * width + nx];
 	if (col == COLOR_NONE) {
-		simple_set_xy(data, d->x + sx, d->y + sy, 0);
-		*err = NULL;
+		simple_set_xy(data, nx, ny, 0);
 		return true;
 	} else if (col == COLOR_WALL) {
 		*err = A_MSG_WALL_HIT;
@@ -168,9 +176,8 @@ bool simple_try_move(void *data, char c, bool *win, char **err,
 		*err = A_MSG_WIN;
 		return false;
 	} else {
-		*new_x = d->x + sx;
-		*new_y = d->y + sy;
-		*err = NULL;
+		*new_x = nx;
+		*new_y = ny;
 		return false;
 	}
 }
@@ -181,6 +188,82 @@ char *simple_move(void *data, char c, bool *win)
 	int new_x, new_y;
 
 	if (simple_try_move(data, c, win, &err, &new_x, &new_y))
+		return NULL;
+	if (!err)
+		err = A_MSG_WALL_HIT;
+	return err;
+}
+
+bool simple_try_o_move(void *data, char c, bool *win, char **err,
+		       int *new_x, int *new_y)
+{
+	struct simple_data *d = data;
+	unsigned char col;
+	int nx, ny;
+
+	*win = false;
+	*err = NULL;
+
+	nx = d->x;
+	ny = d->y;
+
+	switch (c) {
+	case 'w':
+		break;
+	case 'a':
+		simple_set_xy(data, nx, ny, (d->angle + 90) % 360);
+		return true;
+	case 'd':
+		simple_set_xy(data, nx, ny, (d->angle + 270) % 360);
+		return true;
+	default:
+		*err = A_MSG_UNKNOWN_MOVE;
+		return false;
+	}
+
+	switch (d->angle) {
+	case 0:
+		ny--;
+		break;
+	case 90:
+		nx--;
+		break;
+	case 180:
+		ny++;
+		break;
+	case 270:
+		nx++;
+		break;
+	}
+	if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
+		*err = A_MSG_OUT_OF_MAZE;
+		return false;
+	}
+
+	col = level_data[ny * width + nx];
+	if (col == COLOR_NONE) {
+		simple_set_xy(data, nx, ny, d->angle);
+		return true;
+	} else if (col == COLOR_WALL) {
+		*err = A_MSG_WALL_HIT;
+		return false;
+	} else if (col == COLOR_TREASURE) {
+		*win = true;
+		*err = A_MSG_WIN;
+		return false;
+	} else {
+		*new_x = nx;
+		*new_y = ny;
+		return false;
+	}
+}
+
+char *simple_o_move(void *data, char c, bool *win)
+{
+	char *err;
+	int new_x, new_y;
+
+	if (simple_try_o_move(data, c, win, &err, &new_x, &new_y))
 		return NULL;
 	if (!err)
 		err = A_MSG_WALL_HIT;
