@@ -1,4 +1,3 @@
-#include "../level.h"
 #include "simple.h"
 
 LEVEL_CODE("zzz");
@@ -42,23 +41,5 @@ static const unsigned char level[WIDTH * HEIGHT] = {
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 };
 
-static void init(void)
-{
-	simple_init(WIDTH, HEIGHT, level, 17, 17, sizeof(struct simple_data));
-}
-
-const struct level_ops level_ops = {
-	.max_conn = 2,
-	.max_time = 600,
-	.init = init,
-	.get_data = simple_get_data,
-	.free_data = simple_free_data,
-	.move = simple_move,
-	.what = simple_what,
-	.maze = simple_maze,
-	.get_x = simple_get_x,
-	.get_y = simple_get_y,
-	.get_w = simple_get_w,
-	.get_h = simple_get_h,
-	.redraw = simple_redraw,
-};
+SIMPLE_INIT(init, WIDTH, HEIGHT, level, 17, 17);
+SIMPLE_DEFINE(2, 600, init, simple_move);

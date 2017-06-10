@@ -1,6 +1,6 @@
 #ifndef SIMPLE_H
 #define SIMPLE_H
-#include <stdbool.h>
+#include "../level.h"
 
 /* Easy implementation of simple levels. All objects must be in the basic
  * grid (i.e. coordinates are multiple of 15). The grid must be statically
@@ -51,5 +51,32 @@ void simple_set_xy(void *data, int x, int y, int angle);
  * walls and treasure. If you need anything more, you need to implement your
  * own 'move' handler. */
 char *simple_move(void *data, char c, bool *win);
+
+/* Macros for easy definition of levels. */
+
+#define SIMPLE_INIT(name, width, height, level_data, start_x, start_y)	\
+	static void name(void)						\
+	{								\
+		simple_init(width, height, level_data,			\
+			    start_x, start_y,				\
+			    sizeof(struct simple_data));		\
+	}
+
+#define SIMPLE_DEFINE(max_conn_, max_time_, init_, move_)		\
+	const struct level_ops level_ops = {				\
+		.max_conn = max_conn_,					\
+		.max_time = max_time_,					\
+		.init = init_,						\
+		.get_data = simple_get_data,				\
+		.free_data = simple_free_data,				\
+		.move = move_,						\
+		.what = simple_what,					\
+		.maze = simple_maze,					\
+		.get_x = simple_get_x,					\
+		.get_y = simple_get_y,					\
+		.get_w = simple_get_w,					\
+		.get_h = simple_get_h,					\
+		.redraw = simple_redraw,				\
+	}
 
 #endif
