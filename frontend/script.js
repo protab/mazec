@@ -80,14 +80,14 @@ function render(map) {
         var angle = map.floating_tiles[i].rotation * Math.PI / 180;
 
         context.translate(x, y);
-        context.rotate(angle);
+        context.rotate(-angle);
         try {
             context.drawImage(image, -width / 2, -height / 2, width, height);
         } catch (e) {
             var missing = document.getElementById("missing");
             context.drawImage(missing, -width / 2, -height / 2, width, height);
         }
-        context.rotate(-angle);
+        context.rotate(angle);
         context.translate(-x, -y);
     }
 }
@@ -179,9 +179,9 @@ function init() {
         // FLOATING TILES
         var floating_tiles = []
         while (bi < data.length) {
-            var x = data[bi+1] + 256 * ((data[bi] & 0x80) >>> 7);
-            var y = data[bi+2] + 256 * ((data[bi] & 0x40) >>> 6);
-            var rot = data[bi] & 0x20 > 0;
+            var x = data[bi+1] + 256 * ((data[bi] & 0x40) >>> 6);
+            var y = data[bi+2] + 256 * ((data[bi] & 0x80) >>> 7);
+            var rot = (data[bi] & 0x20) > 0;
             var rotation = 0;
             sprite = data[bi] & 0x1f;
 
