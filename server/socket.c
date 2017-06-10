@@ -42,8 +42,8 @@ struct socket {
 #define WQUEUE_MAX_LEN	20
 
 /* Token bucket rate limiter values: */
-#define RATE		6000	/* in bytes per second */
-#define BUCKET_SIZE	3000	/* in bytes */
+#define RATE		12000	/* in bytes per second */
+#define BUCKET_SIZE	6000	/* in bytes */
 
 static void socket_process_wqueue(struct socket *s);
 static void socket_del_wqueue(struct socket *s);
