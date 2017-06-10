@@ -43,7 +43,7 @@ struct socket {
 
 /* Token bucket rate limiter values: */
 #define RATE		12000	/* in bytes per second */
-#define BUCKET_SIZE	6000	/* in bytes */
+#define BUCKET_SIZE	60000	/* in bytes */
 
 static void socket_process_wqueue(struct socket *s);
 static void socket_del_wqueue(struct socket *s);
