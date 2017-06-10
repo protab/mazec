@@ -32,10 +32,6 @@ void simple_init(int width_, int height_, const unsigned char *level,
 
 	origin_x = start_x - (DRAW_MOD_WIDTH + 1) / 2;
 	origin_y = start_y - (DRAW_MOD_HEIGHT + 1) / 2;
-	if (origin_x < 0)
-		origin_x = 0;
-	if (origin_y < 0)
-		origin_y = 0;
 }
 
 void *simple_get_data(void)
@@ -264,13 +260,19 @@ static void update_viewport(void)
 
 void simple_redraw(void)
 {
-	int x_max, y_max;
+	int x_min, y_min, x_max, y_max;
 	int x, y;
 	struct simple_data *d;
 
 	draw_clear();
 	draw_set_origin(origin_x * DRAW_MOD, origin_y * DRAW_MOD);
 
+	x_min = origin_x;
+	if (x_min < 0)
+		x_min = 0;
+	y_min = origin_y;
+	if (y_min < 0)
+		y_min = 0;
 	x_max = origin_x + DRAW_MOD_WIDTH;
 	if (x_max > width)
 		x_max = width;
@@ -278,8 +280,8 @@ void simple_redraw(void)
 	if (y_max > height)
 		y_max = height;
 
-	for (y = origin_y; y < y_max; y++)
-		for (x = origin_x; x < x_max; x++)
+	for (y = y_min; y < y_max; y++)
+		for (x = x_min; x < x_max; x++)
 			draw_item(x * DRAW_MOD, y * DRAW_MOD, 0,
 				  level_data[y * width + x]);
 	for (d = first; d; d = d->next)

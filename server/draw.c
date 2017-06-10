@@ -180,6 +180,14 @@ void draw_item(int x, int y, unsigned angle, unsigned color)
 	floating_last = &p->next;
 }
 
+static int modulo(int dividend, int divisor)
+{
+	int res = dividend % divisor;
+	if (dividend < 0 && res != 0)
+		res += divisor;
+	return res;
+}
+
 void draw_set_origin(int x, int y)
 {
 	if (x_orig == x && y_orig == y)
@@ -187,8 +195,8 @@ void draw_set_origin(int x, int y)
 
 	x_orig = x;
 	y_orig = y;
-	x_start = x - (x % DRAW_MOD);
-	y_start = y - (y % DRAW_MOD);
+	x_start = x - modulo(x, DRAW_MOD);
+	y_start = y - modulo(y, DRAW_MOD);
 
 	was_changed = true;
 }
