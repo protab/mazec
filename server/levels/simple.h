@@ -47,9 +47,21 @@ void simple_redraw(void);
  * 'angle' fields directly. */
 void simple_set_xy(void *data, int x, int y, int angle);
 
+/* Try to move. Returns true if the player was moved; there's nothing to do
+ * in such case. Returns false if the player was not moved. In that case,
+ * 'err' contains either an error message or NULL. If it contains an error
+ * message, move was not possible because of a wall or out of borders. It
+ * can be also a winning message if the move reached a treasure ('win' is
+ * set accordingly). If the move was in bounds but would move to something
+ * that is not a wall or empty space, 'err' contains NULL and the new
+ * coordinates are stored in 'new_x' and 'new_y' (without the player being
+ * moved). */
+bool simple_try_move(void *data, char c, bool *win, char **err,
+		     int *new_x, int *new_y);
+
 /* The simplest levels may use this as the 'move' callback. It handles only
  * walls and treasure. If you need anything more, you need to implement your
- * own 'move' handler. */
+ * own 'move' handler (see the simple_try_move helper). */
 char *simple_move(void *data, char c, bool *win);
 
 /* Macros for easy definition of levels. */

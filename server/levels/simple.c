@@ -129,7 +129,8 @@ void simple_set_xy(void *data, int x, int y, int angle)
 	level_dirty();
 }
 
-char *simple_move(void *data, char c, bool *win)
+bool simple_try_move(void *data, char c, bool *win, char **err,
+		     int *new_x, int *new_y)
 {
 	struct simple_data *d = data;
 	int sx = 0, sy = 0;
@@ -151,17 +152,39 @@ char *simple_move(void *data, char c, bool *win)
 		sx = 1;
 		break;
 	default:
-		return A_MSG_UNKNOWN_MOVE;
+		*err = A_MSG_UNKNOWN_MOVE;
+		return false;
 	}
 	col = level_data[((d->y + sy) * width) + (d->x + sx)];
-	if (col == COLOR_TREASURE) {
+	if (col == COLOR_NONE) {
+		simple_set_xy(data, d->x + sx, d->y + sy, 0);
+		*err = NULL;
+		return true;
+	} else if (col == COLOR_WALL) {
+		*err = A_MSG_WALL_HIT;
+		return false;
+	} else if (col == COLOR_TREASURE) {
 		*win = true;
-		return A_MSG_WIN;
-	} else if (col != COLOR_NONE) {
-		return A_MSG_WALL_HIT;
+		*err = A_MSG_WIN;
+		return false;
+	} else {
+		*new_x = d->x + sx;
+		*new_y = d->y + sy;
+		*err = NULL;
+		return false;
 	}
-	simple_set_xy(data, d->x + sx, d->y + sy, 0);
-	return NULL;
+}
+
+char *simple_move(void *data, char c, bool *win)
+{
+	char *err;
+	int new_x, new_y;
+
+	if (simple_try_move(data, c, win, &err, &new_x, &new_y))
+		return NULL;
+	if (!err)
+		err = A_MSG_WALL_HIT;
+	return err;
 }
 
 static int find_max(int *data, int len)
