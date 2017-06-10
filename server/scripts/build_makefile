@@ -2,7 +2,7 @@
 cp Makefile.t Makefile
 list=
 for f in level_*.c; do
-	code=$(sed -n 's/^#define[ \t]\+CODE[ \t]\+"\([^"]*\).*/\1/p' "$f")
+	code=$(sed -n 's/^[ \t]*LEVEL_CODE[ \t]*([ \t]*"\([^"]*\).*/\1/p' "$f")
 	[[ -z $code ]] && continue
 	list="$list $code.so"
 

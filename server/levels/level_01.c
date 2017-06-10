@@ -3,7 +3,7 @@
 #include "../level.h"
 #include "simple.h"
 
-#define CODE "test"
+LEVEL_CODE("zzz");
 
 #define WIDTH	33
 #define HEIGHT	33

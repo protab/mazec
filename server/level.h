@@ -2,6 +2,9 @@
 #define LEVEL_H
 #include <stdbool.h>
 
+/* The access code for the level. Each level must call this macro. */
+#define LEVEL_CODE(code)
+
 /* The definition of the level. Each level must define a non-static symbol
  * named 'level_ops' of the 'struct level_ops' type. The fields are set to
  * appropriate level data and level callbacks. */
