@@ -30,8 +30,8 @@ void simple_init(int width_, int height_, const unsigned char *level,
 	level_copy = salloc(width * height);
 	first = NULL;
 
-	origin_x = start_x - DRAW_MOD_WIDTH / 2;
-	origin_y = start_y - DRAW_MOD_HEIGHT / 2;
+	origin_x = start_x - (DRAW_MOD_WIDTH + 1) / 2;
+	origin_y = start_y - (DRAW_MOD_HEIGHT + 1) / 2;
 	if (origin_x < 0)
 		origin_x = 0;
 	if (origin_y < 0)
