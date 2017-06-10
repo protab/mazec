@@ -43,11 +43,10 @@ while True:
 
 print("""#define WIDTH\t{}
 #define HEIGHT\t{}
-
 static const unsigned char level[WIDTH * HEIGHT] = {{""".format(width, height))
 for y in range(width):
     s = "\t"
     for x in range(height):
         s += "{}, ".format(maze[coords(x, y)])
-    print(s)
+    print(s.rstrip())
 print("};")
