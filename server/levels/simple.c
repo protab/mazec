@@ -19,6 +19,7 @@ void simple_init(int width_, int height_, const unsigned char *level,
 		 int start_x, int start_y, unsigned priv_size)
 {
 	grid_init(width_, height_, level, start_x, start_y, priv_size);
+	grid_set_move_commit(simple_move_commit);
 
 	width = width_;
 	height = height_;
@@ -105,63 +106,10 @@ char *simple_get_h(void *data __unused, int *res)
 	return NULL;
 }
 
-void simple_set_xy(void *data, int x, int y, int angle)
+void simple_move_commit(void *data __unused)
 {
-	struct simple_data *d = data;
-
-	d->x = x;
-	d->y = y;
-	d->angle = angle;
 	update_viewport();
 	level_dirty();
-}
-
-bool simple_try_move(void *data, char c, bool *win, char **err,
-		     int *new_x, int *new_y)
-{
-	struct simple_data *d = data;
-	bool res;
-
-	res = grid_try_move(data, c, win, err, new_x, new_y);
-	if (res)
-		simple_set_xy(data, d->x, d->y, d->angle);
-	return res;
-}
-
-char *simple_move(void *data, char c, bool *win)
-{
-	char *err;
-	int new_x, new_y;
-
-	if (simple_try_move(data, c, win, &err, &new_x, &new_y))
-		return NULL;
-	if (!err)
-		err = A_MSG_WALL_HIT;
-	return err;
-}
-
-bool simple_try_o_move(void *data, char c, bool *win, char **err,
-		       int *new_x, int *new_y)
-{
-	struct simple_data *d = data;
-	bool res;
-
-	res = grid_try_o_move(data, c, win, err, new_x, new_y);
-	if (res)
-		simple_set_xy(data, d->x, d->y, d->angle);
-	return res;
-}
-
-char *simple_o_move(void *data, char c, bool *win)
-{
-	char *err;
-	int new_x, new_y;
-
-	if (simple_try_o_move(data, c, win, &err, &new_x, &new_y))
-		return NULL;
-	if (!err)
-		err = A_MSG_WALL_HIT;
-	return err;
 }
 
 static int find_max(int *data, int len)

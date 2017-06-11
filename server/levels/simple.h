@@ -35,27 +35,15 @@ char *simple_get_h(void *data, int *res);
 /* This must be set as the level's 'redraw' callback. */
 void simple_redraw(void);
 
-/* Move the player. This must be called instead of altering the 'x', 'y' and
- * 'angle' fields directly. */
-void simple_set_xy(void *data, int x, int y, int angle);
+/* Has to be called after player is moved, i.e. after any of 'x', 'y' or
+ * 'angle' field in 'data' is modified. */
+void simple_move_commit(void *data);
 
-/* Try to move. See grid_try_move for description of pamaters. */
-bool simple_try_move(void *data, char c, bool *win, char **err,
-		     int *new_x, int *new_y);
-
-/* Try to move, rotating player on left/right keys. The parameters are
- * identical to the simple_try_move helper. */
-bool simple_try_o_move(void *data, char c, bool *win, char **err,
-		       int *new_x, int *new_y);
-
-/* The simplest levels may use this as the 'move' callback. It handles only
- * walls and treasure. If you need anything more, you need to implement your
- * own 'move' handler (see the simple_try_move helper). */
-char *simple_move(void *data, char c, bool *win);
-
-/* Usable as the 'move' callback with the same limitations as simple_move.
- * The player changes its orientation on left/right keys. */
-char *simple_o_move(void *data, char c, bool *win);
+/* Move helpers and simple callbacks. See grid.h for details. */
+#define simple_try_move		grid_try_move
+#define simple_try_o_move	grid_try_o_move
+#define simple_move		grid_move
+#define simple_o_move		grid_o_move
 
 /* Macros for easy definition of levels. */
 

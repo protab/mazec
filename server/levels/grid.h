@@ -18,6 +18,8 @@ struct grid_data {
 
 extern struct grid_data *grid_players;
 
+typedef void (*grid_move_commit_t)(void *data);
+
 /* Initialize the level. This must be called from the level's 'init'
  * callback.
  * The 'level' array contains the level data, 'width' and 'height' is the
@@ -27,6 +29,9 @@ extern struct grid_data *grid_players;
  * include struct grid_data size. */
 void grid_init(int width, int height, const unsigned char *level,
 	       int start_x, int start_y, unsigned priv_size);
+
+/* Sets the callback called after successful move. */
+void grid_set_move_commit(grid_move_commit_t move_commit);
 
 /* These must be called from the level's 'get_data' and 'free_data'
  * callbacks. */
@@ -49,6 +54,15 @@ bool grid_try_move(void *data, char c, bool *win, char **err,
  * identical to the grid_try_move helper. */
 bool grid_try_o_move(void *data, char c, bool *win, char **err,
 		     int *new_x, int *new_y);
+
+/* The simplest levels may use this as the 'move' callback. It handles only
+ * walls and treasure. If you need anything more, you need to implement your
+ * own 'move' handler (see the grid_try_move helper). */
+char *grid_move(void *data, char c, bool *win);
+
+/* Usable as the 'move' callback with the same limitations as grid_move. The
+ * player changes its orientation on left/right keys. */
+char *grid_o_move(void *data, char c, bool *win);
 
 /* Macro to iterate through all players. */
 #define for_each_player(player)						\

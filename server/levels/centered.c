@@ -11,6 +11,7 @@ void centered_init(int width_, int height_, const unsigned char *level,
 		   int start_x, int start_y, unsigned priv_size)
 {
 	grid_init(width_, height_, level, start_x, start_y, priv_size);
+	grid_set_move_commit(centered_move_commit);
 
 	width = width_;
 	height = height_;
@@ -75,62 +76,9 @@ char *centered_get_h(void *data __unused, int *res)
 	return NULL;
 }
 
-void centered_set_xy(void *data, int x, int y, int angle)
+void centered_move_commit(void *data __unused)
 {
-	struct centered_data *d = data;
-
-	d->x = x;
-	d->y = y;
-	d->angle = angle;
 	level_dirty();
-}
-
-bool centered_try_move(void *data, char c, bool *win, char **err,
-		       int *new_x, int *new_y)
-{
-	struct centered_data *d = data;
-	bool res;
-
-	res = grid_try_move(data, c, win, err, new_x, new_y);
-	if (res)
-		centered_set_xy(data, d->x, d->y, d->angle);
-	return res;
-}
-
-char *centered_move(void *data, char c, bool *win)
-{
-	char *err;
-	int new_x, new_y;
-
-	if (centered_try_move(data, c, win, &err, &new_x, &new_y))
-		return NULL;
-	if (!err)
-		err = A_MSG_WALL_HIT;
-	return err;
-}
-
-bool centered_try_o_move(void *data, char c, bool *win, char **err,
-			 int *new_x, int *new_y)
-{
-	struct centered_data *d = data;
-	bool res;
-
-	res = grid_try_o_move(data, c, win, err, new_x, new_y);
-	if (res)
-		centered_set_xy(data, d->x, d->y, d->angle);
-	return res;
-}
-
-char *centered_o_move(void *data, char c, bool *win)
-{
-	char *err;
-	int new_x, new_y;
-
-	if (centered_try_o_move(data, c, win, &err, &new_x, &new_y))
-		return NULL;
-	if (!err)
-		err = A_MSG_WALL_HIT;
-	return err;
 }
 
 void centered_redraw(void)

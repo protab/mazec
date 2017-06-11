@@ -10,6 +10,7 @@
 static int width, height, start_x, start_y;
 static unsigned priv_size;
 static const unsigned char *level_data;
+grid_move_commit_t move_commit_cb;
 
 struct grid_data *grid_players;
 
@@ -26,6 +27,12 @@ void grid_init(int width_, int height_, const unsigned char *level,
 	level_data = level;
 
 	grid_players = NULL;
+	move_commit_cb = NULL;
+}
+
+void grid_set_move_commit(grid_move_commit_t move_commit)
+{
+	move_commit_cb = move_commit;
 }
 
 void *grid_get_data(void)
@@ -90,6 +97,8 @@ bool grid_try_move(void *data, char c, bool *win, char **err,
 	if (col == COLOR_NONE) {
 		d->x = nx;
 		d->y = ny;
+		if (move_commit_cb)
+			move_commit_cb(data);
 		return true;
 	} else if (col == COLOR_WALL) {
 		*err = A_MSG_WALL_HIT;
@@ -123,9 +132,13 @@ bool grid_try_o_move(void *data, char c, bool *win, char **err,
 		break;
 	case 'a':
 		d->angle = (d->angle + 90) % 360;
+		if (move_commit_cb)
+			move_commit_cb(data);
 		return true;
 	case 'd':
 		d->angle = (d->angle + 270) % 360;
+		if (move_commit_cb)
+			move_commit_cb(data);
 		return true;
 	default:
 		*err = A_MSG_UNKNOWN_MOVE;
@@ -155,6 +168,8 @@ bool grid_try_o_move(void *data, char c, bool *win, char **err,
 	if (col == COLOR_NONE) {
 		d->x = nx;
 		d->y = ny;
+		if (move_commit_cb)
+			move_commit_cb(data);
 		return true;
 	} else if (col == COLOR_WALL) {
 		*err = A_MSG_WALL_HIT;
@@ -168,4 +183,28 @@ bool grid_try_o_move(void *data, char c, bool *win, char **err,
 		*new_y = ny;
 		return false;
 	}
+}
+
+char *grid_move(void *data, char c, bool *win)
+{
+	char *err;
+	int new_x, new_y;
+
+	if (grid_try_move(data, c, win, &err, &new_x, &new_y))
+		return NULL;
+	if (!err)
+		err = A_MSG_WALL_HIT;
+	return err;
+}
+
+char *grid_o_move(void *data, char c, bool *win)
+{
+	char *err;
+	int new_x, new_y;
+
+	if (grid_try_o_move(data, c, win, &err, &new_x, &new_y))
+		return NULL;
+	if (!err)
+		err = A_MSG_WALL_HIT;
+	return err;
 }
