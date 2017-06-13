@@ -38,31 +38,31 @@ void grid_set_move_commit(grid_move_commit_t move_commit);
 void *grid_get_data(void);
 void grid_free_data(void *data);
 
-/* Try to move. Returns true if the player was moved; there's nothing to do
- * in such case. Returns false if the player was not moved. In that case,
- * 'err' contains either an error message or NULL. If it contains an error
- * message, move was not possible because of a wall or out of borders. It
- * can be also a winning message if the move reached a treasure ('win' is
- * set accordingly). If the move was in bounds but would move to something
- * that is not a wall or empty space, 'err' contains NULL and the new
- * coordinates are stored in 'new_x' and 'new_y' (without the player being
- * moved). */
-bool grid_try_move(void *data, char c, bool *win, char **err,
-		   int *new_x, int *new_y);
+/* Try to move. Returns -1 or one of the MOVE_ constants (see ../level.h).
+ * The meaning of the return values is:
+ * MOVE_OKAY: the player was moved, there's nothing to do.
+ * MOVE_BAD: the player would hit a wall or would move out of borders. The
+ *           'msg' is set to an error message.
+ * MOVE_WIN: the player reached a treasure. The 'msg' is set.
+ * MOVE_LOST: this is never returned.
+ * -1: the move was in bounds but would move to something that is not a wall
+ *     or empty space. Further processing is required. The new coordinates
+ *     are stored in 'new_x' and 'new_y' (without the player being moved).
+ */
+int grid_try_move(void *data, char c, char **msg, int *new_x, int *new_y);
 
 /* Try to move, rotating player on left/right keys. The parameters are
  * identical to the grid_try_move helper. */
-bool grid_try_o_move(void *data, char c, bool *win, char **err,
-		     int *new_x, int *new_y);
+int grid_try_o_move(void *data, char c, char **msg, int *new_x, int *new_y);
 
 /* The simplest levels may use this as the 'move' callback. It handles only
  * walls and treasure. If you need anything more, you need to implement your
  * own 'move' handler (see the grid_try_move helper). */
-char *grid_move(void *data, char c, bool *win);
+int grid_move(void *data, char c, char **msg);
 
 /* Usable as the 'move' callback with the same limitations as grid_move. The
  * player changes its orientation on left/right keys. */
-char *grid_o_move(void *data, char c, bool *win);
+int grid_o_move(void *data, char c, char **msg);
 
 /* Macro to iterate through all players. */
 #define for_each_player(player)						\

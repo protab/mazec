@@ -273,15 +273,23 @@ static char *process_cmd(struct p_data *pd)
 	if (p_end_set && time_after(&p_end))
 		return P_MSG_TIMEOUT;
 	if (!strcmp(pd->cmd, "MOVE")) {
-		bool win = false;
+		int res;
 
 		if (pd->val_len != 1)
 			return P_MSG_CHAR_EXPECTED;
-		nope = p_level->move(pd->data, pd->val[0], &win);
-		if (!nope)
+		res = p_level->move(pd->data, pd->val[0], &nope);
+		switch (res) {
+		case MOVE_OKAY:
+			nope = NULL;
 			p_send_ack(pd);
-		if (win) {
+			break;
+		case MOVE_BAD:
+			break;
+		case MOVE_WIN:
 			p_report_win(pd, nope);
+			return NULL;
+		case MOVE_LOSE:
+			p_report_error(pd, nope);
 			return NULL;
 		}
 	} else if (!strcmp(pd->cmd, "WHAT")) {

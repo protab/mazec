@@ -32,10 +32,10 @@ struct level_ops {
 	 * failure. Failure does not terminate the level. */
 
 	/* Called for the MOVE command. The passed character is in 'c'.
-	 * The return semantics is valid only when '*win' is false. If
-	 * '*win' is set to true, the returned message is the winning
-	 * message and the level is terminated. */
-	char *(*move)(void *data, char c, bool *win);
+	 * Returns one of the MOVE_ constants (see below). In cases other
+	 * than MOVE_OKAY, 'msg' must be set to a message that will be sent
+	 * to the client. */
+	int (*move)(void *data, char c, char **msg);
 
 	/* Returns the color at position 'x', 'y'. The meaning of 'x' and
 	 * 'y' is up to the level. The returned color is stored into
@@ -66,6 +66,14 @@ struct level_ops {
 	 * not indicate the screen is dirty, for example when a new client
 	 * connetcs. */
 	void (*redraw)(void);
+};
+
+/* 'move' callback return values. */
+enum {
+	MOVE_OKAY,	/* Moved successfully. */
+	MOVE_BAD,	/* Cannot move that way. */
+	MOVE_WIN,	/* End of the level, winning. */
+	MOVE_LOSE,	/* End of the level, losing. */
 };
 
 /* Colors (objects). */

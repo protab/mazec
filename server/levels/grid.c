@@ -58,15 +58,11 @@ void grid_free_data(void *data)
 	free(d);
 }
 
-bool grid_try_move(void *data, char c, bool *win, char **err,
-		   int *new_x, int *new_y)
+int grid_try_move(void *data, char c, char **msg, int *new_x, int *new_y)
 {
 	struct grid_data *d = data;
 	int nx, ny;
 	unsigned char col;
-
-	*win = false;
-	*err = NULL;
 
 	nx = d->x;
 	ny = d->y;
@@ -85,12 +81,12 @@ bool grid_try_move(void *data, char c, bool *win, char **err,
 		nx++;
 		break;
 	default:
-		*err = A_MSG_UNKNOWN_MOVE;
-		return false;
+		*msg = A_MSG_UNKNOWN_MOVE;
+		return MOVE_BAD;
 	}
 	if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
-		*err = A_MSG_OUT_OF_MAZE;
-		return false;
+		*msg = A_MSG_OUT_OF_MAZE;
+		return MOVE_BAD;
 	}
 
 	col = level_data[ny * width + nx];
@@ -99,30 +95,25 @@ bool grid_try_move(void *data, char c, bool *win, char **err,
 		d->y = ny;
 		if (move_commit_cb)
 			move_commit_cb(data);
-		return true;
+		return MOVE_OKAY;
 	} else if (col == COLOR_WALL) {
-		*err = A_MSG_WALL_HIT;
-		return false;
+		*msg = A_MSG_WALL_HIT;
+		return MOVE_BAD;
 	} else if (col == COLOR_TREASURE) {
-		*win = true;
-		*err = A_MSG_WIN;
-		return false;
+		*msg = A_MSG_WIN;
+		return MOVE_WIN;
 	} else {
 		*new_x = nx;
 		*new_y = ny;
-		return false;
+		return -1;
 	}
 }
 
-bool grid_try_o_move(void *data, char c, bool *win, char **err,
-		     int *new_x, int *new_y)
+int grid_try_o_move(void *data, char c, char **msg, int *new_x, int *new_y)
 {
 	struct simple_data *d = data;
 	unsigned char col;
 	int nx, ny;
-
-	*win = false;
-	*err = NULL;
 
 	nx = d->x;
 	ny = d->y;
@@ -134,15 +125,15 @@ bool grid_try_o_move(void *data, char c, bool *win, char **err,
 		d->angle = (d->angle + 90) % 360;
 		if (move_commit_cb)
 			move_commit_cb(data);
-		return true;
+		return MOVE_OKAY;
 	case 'd':
 		d->angle = (d->angle + 270) % 360;
 		if (move_commit_cb)
 			move_commit_cb(data);
-		return true;
+		return MOVE_OKAY;
 	default:
-		*err = A_MSG_UNKNOWN_MOVE;
-		return false;
+		*msg = A_MSG_UNKNOWN_MOVE;
+		return MOVE_BAD;
 	}
 
 	switch (d->angle) {
@@ -160,8 +151,8 @@ bool grid_try_o_move(void *data, char c, bool *win, char **err,
 		break;
 	}
 	if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
-		*err = A_MSG_OUT_OF_MAZE;
-		return false;
+		*msg = A_MSG_OUT_OF_MAZE;
+		return MOVE_BAD;
 	}
 
 	col = level_data[ny * width + nx];
@@ -170,41 +161,42 @@ bool grid_try_o_move(void *data, char c, bool *win, char **err,
 		d->y = ny;
 		if (move_commit_cb)
 			move_commit_cb(data);
-		return true;
+		return MOVE_OKAY;
 	} else if (col == COLOR_WALL) {
-		*err = A_MSG_WALL_HIT;
-		return false;
+		*msg = A_MSG_WALL_HIT;
+		return MOVE_BAD;
 	} else if (col == COLOR_TREASURE) {
-		*win = true;
-		*err = A_MSG_WIN;
-		return false;
+		*msg= A_MSG_WIN;
+		return MOVE_WIN;
 	} else {
 		*new_x = nx;
 		*new_y = ny;
-		return false;
+		return -1;
 	}
 }
 
-char *grid_move(void *data, char c, bool *win)
+int grid_move(void *data, char c, char **msg)
 {
-	char *err;
 	int new_x, new_y;
+	int res;
 
-	if (grid_try_move(data, c, win, &err, &new_x, &new_y))
-		return NULL;
-	if (!err)
-		err = A_MSG_WALL_HIT;
-	return err;
+	res = grid_try_move(data, c, msg, &new_x, &new_y);
+	if (res < 0) {
+		*msg = A_MSG_WALL_HIT;
+		res = MOVE_BAD;
+	}
+	return res;
 }
 
-char *grid_o_move(void *data, char c, bool *win)
+int grid_o_move(void *data, char c, char **msg)
 {
-	char *err;
 	int new_x, new_y;
+	int res;
 
-	if (grid_try_o_move(data, c, win, &err, &new_x, &new_y))
-		return NULL;
-	if (!err)
-		err = A_MSG_WALL_HIT;
-	return err;
+	res = grid_try_o_move(data, c, msg, &new_x, &new_y);
+	if (res < 0) {
+		*msg = A_MSG_WALL_HIT;
+		res = MOVE_BAD;
+	}
+	return res;
 }
