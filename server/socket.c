@@ -69,13 +69,10 @@ static int socket_cb(int fd, unsigned events, void *data)
 	return 0;
 }
 
-static int socket_ratelimit_cb(int fd, unsigned events, void *data)
+static int socket_ratelimit_cb(int fd __unused, int count __unused, void *data)
 {
 	struct socket *s = data;
 
-	if (!(events & EV_READ))
-		return 0;
-	timer_snooze(fd);
 	event_change_fd_add(s->fd, EV_WRITE);
 	s->rate_limit_okay = true;
 	return 0;

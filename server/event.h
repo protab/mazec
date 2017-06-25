@@ -27,13 +27,32 @@ int event_change_fd_remove(int fd, unsigned events);
 int event_loop(void);
 void event_quit(void);
 
-int timer_new(event_callback_t cb, void *cb_data,
+/* Timers */
+
+/* For return values, see event_callback_t. The "count" parameter contains
+ * a value indicating how many times the alarm was fired since the last
+ * call. This may be greater than one e.g. in case it was paused. */
+typedef int (*timer_callback_t)(int fd, int count, void *data);
+
+/* Adds a new timer. "cb" is the callback that is called whenever the timer
+ * fires, "cb_data" is user data passed to the callback, "cb_destructor" is
+ * used to release "cb_data" when the timer is deleted. The return value is
+ * the timer identifier or < 0 in case of an error. */
+int timer_new(timer_callback_t cb, void *cb_data,
 	      cb_data_destructor_t cb_destructor);
 
-/* pass 0 in milisecs to disarm */
+/* Arms (sets) the given timer. It will fire after the given number of
+ * miliseconds. If "repeat" is false, it will be a one shot (but it's of
+ * course possible to call "timer_arm" gain), if it's true, the timer will
+ * fire repeatedly every "milisecs". */
 int timer_arm(int fd, int milisecs, bool repeat);
 
-int timer_snooze(int fd);
+/* Disarms the given timer. It's guaranteed that the callback won't be
+ * called after this call. */
+int timer_disarm(int fd);
+
+/* Deletes the given timer. If it's armed, it will be automatically
+ * disarmed. */
 int timer_del(int fd);
 
 #endif

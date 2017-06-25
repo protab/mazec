@@ -74,11 +74,8 @@ static void pipe_read(struct socket *s, void *data __unused)
 	}
 }
 
-static int idle_expired(int fd, unsigned events, void *data __unused)
+static int idle_expired(int fd __unused, int count __unused, void *data __unused)
 {
-	if (!(events & EV_READ))
-		return 1;
-	timer_snooze(fd);
 	log_info("no connection in %d ms, terminating", IDLE_TIMEOUT);
 	event_quit();
 	return 0;

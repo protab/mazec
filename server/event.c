@@ -29,6 +29,13 @@ struct fd_data {
 	struct fd_data *next;
 };
 
+struct timer_data {
+	timer_callback_t cb;
+	void *cb_data;
+	cb_data_destructor_t cb_destructor;
+	bool armed;
+};
+
 static int epfd;
 static int sigfd;
 static bool quit;
@@ -154,6 +161,15 @@ static struct fd_data *find_event(int fd)
 	for (fdd = fdd_hash[hash(fd)]; fdd && fdd->fd != fd; fdd = fdd->next)
 		;
 	return fdd;
+}
+
+static void *find_cb_data(int fd)
+{
+	struct fd_data *fdd = find_event(fd);
+
+	if (fdd)
+		return fdd->cb_data;
+	return NULL;
 }
 
 /* enable values: 1 to add to the poll set, 0 to remove, -1 to change, -2 to
@@ -286,37 +302,7 @@ void event_quit(void)
 	quit = true;
 }
 
-int timer_new(event_callback_t cb, void *cb_data,
-	      cb_data_destructor_t cb_destructor)
-{
-	int fd;
-	int ret;
-
-	fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-	if (fd < 0)
-		return -errno;
-	ret = event_add_fd(fd, EV_READ, cb, cb_data, cb_destructor);
-	if (ret < 0) {
-		close(fd);
-		return ret;
-	}
-	return fd;
-}
-
-int timer_arm(int fd, int milisecs, bool repeat)
-{
-	struct itimerspec its;
-
-	memset(&its, 0, sizeof(its));
-	time_add(&its.it_value, milisecs);
-	if (repeat)
-		time_add(&its.it_interval, milisecs);
-	if (timerfd_settime(fd, 0, &its, NULL) < 0)
-		return -errno;
-	return 0;
-}
-
-int timer_snooze(int fd)
+static int timer_get_count(int fd)
 {
 	uint64_t val;
 
@@ -327,10 +313,80 @@ int timer_snooze(int fd)
 	return val;
 }
 
+static int timer_cb(int fd, unsigned events, void *data)
+{
+	struct timer_data *td = data;
+	int count;
+
+	if (!(events & EV_READ))
+		return 0;
+	count = timer_get_count(fd);
+	if (!td->armed)
+		return 0;
+	return td->cb(fd, count, td->cb_data);
+}
+
+static void timer_destructor(void *data)
+{
+	struct timer_data *td = data;
+
+	if (td->cb_destructor)
+		td->cb_destructor(td->cb_data);
+	free(td);
+}
+
+int timer_new(timer_callback_t cb, void *cb_data,
+	      cb_data_destructor_t cb_destructor)
+{
+	struct timer_data *td;
+	int fd;
+	int ret;
+
+	td = salloc(sizeof(*td));
+	td->cb = cb;
+	td->cb_data = cb_data;
+	td->cb_destructor = cb_destructor;
+	td->armed = false;
+	fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+	if (fd < 0) {
+		free(td);
+		return -errno;
+	}
+	ret = event_add_fd(fd, EV_READ, timer_cb, td, timer_destructor);
+	if (ret < 0) {
+		free(td);
+		close(fd);
+		return ret;
+	}
+	return fd;
+}
+
+int timer_arm(int fd, int milisecs, bool repeat)
+{
+	struct timer_data *td = find_cb_data(fd);
+	struct itimerspec its;
+
+	memset(&its, 0, sizeof(its));
+	time_add(&its.it_value, milisecs);
+	if (repeat)
+		time_add(&its.it_interval, milisecs);
+	if (timerfd_settime(fd, 0, &its, NULL) < 0)
+		return -errno;
+	if (td)
+		td->armed = !!milisecs;
+	return 0;
+}
+
+int timer_disarm(int fd)
+{
+	return timer_arm(fd, 0, false);
+}
+
 int timer_del(int fd)
 {
 	int res;
 
+	timer_disarm(fd);
 	res = event_del_fd(fd);
 	close(fd);
 	return res;

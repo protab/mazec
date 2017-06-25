@@ -61,7 +61,7 @@ static int p_draw_timer;
 static bool p_waiting;
 
 static void p_pause_all(bool enable);
-static int p_draw(int fd, unsigned events, void *data);
+static int p_draw(int fd, int count, void *data);
 
 /* Deletes the socket if send fails. */
 static int p_send_msg(struct p_data *pd, char *cmd, char *data)
@@ -557,10 +557,8 @@ void proto_resume(void)
 		time_from_now(&p_end, p_paused_time);
 }
 
-static int p_draw(int fd, unsigned events, void *data __unused)
+static int p_draw(int fd __unused, int count __unused, void *data __unused)
 {
-	if (!(events & EV_READ))
-		return 0;
 	if (p_end_set) {
 		long left;
 
@@ -571,6 +569,5 @@ static int p_draw(int fd, unsigned events, void *data __unused)
 		draw_seconds((left + 999) / 1000);
 	}
 	app_redraw(p_level);
-	timer_snooze(fd);
 	return 0;
 }
