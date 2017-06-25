@@ -19,7 +19,7 @@
 #define P_MSG_CHAR_EXPECTED	"Tento prikaz ocekava jako parametr jeden znak."
 #define P_MSG_2INT_EXPECTED	"Tento prikaz ocekava jako parametr dve nezaporna cisla."
 #define P_MSG_EXTRA_PARAM	"Tento prikaz se vola bez parametru."
-#define P_MSG_MAZE_NOT_AVAIL	"V teto uloze nelze ziskat data o celem bludisti. Pouzij prikaz WHAT."
+#define P_MSG_MAZE_NOT_AVAIL	"V teto uloze nelze ziskat data o celem hracim poli. Pouzij prikaz WHAT."
 
 #define A_MSG_WIN		"Vyborne! Blahoprejeme k dokonceni ulohy."
 #define A_MSG_OUT_OF_MAZE	"Misto se nachazi mimo hraci plochu."
