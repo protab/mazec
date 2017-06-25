@@ -64,7 +64,8 @@ struct level_ops {
 
 	/* Redraw the remote screen. May be called even when the level did
 	 * not indicate the screen is dirty, for example when a new client
-	 * connetcs. */
+	 * connects. May not be called at all, for example when there's no
+	 * client connected. */
 	void (*redraw)(void);
 };
 
