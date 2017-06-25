@@ -43,7 +43,7 @@ int timer_new(timer_callback_t cb, void *cb_data,
 
 /* Arms (sets) the given timer. It will fire after the given number of
  * miliseconds. If "repeat" is false, it will be a one shot (but it's of
- * course possible to call "timer_arm" gain), if it's true, the timer will
+ * course possible to call "timer_arm" again), if it's true, the timer will
  * fire repeatedly every "milisecs". */
 int timer_arm(int fd, int milisecs, bool repeat);
 
