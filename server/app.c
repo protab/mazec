@@ -1,19 +1,35 @@
 #include "app.h"
 #include <dlfcn.h>
+#include <stdbool.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "config.h"
 #include "common.h"
 #include "draw.h"
 #include "event.h"
 #include "log.h"
 #include "proto.h"
+#include "pybindings.h"
 #include "websocket_data.h"
 
 static bool dirty;
 
-#define MAX_PATH_LEN	(sizeof(LEVELS_DIR) + LOGIN_LEN + 3)
+#define MAX_PATH_LEN	(sizeof(LEVELS_DIR) + LOGIN_LEN + 3 + 1)
+#define MAX_PYPATH_LEN	(sizeof(PYLEVELS_DIR) + LOGIN_LEN + 5 + 1)
 
-const struct level_ops *app_get_level(char *code)
+static bool file_exists(const char *path, bool symlink)
+{
+	struct stat sb;
+
+	if (lstat(path, &sb) < 0)
+		return false;
+	if (symlink)
+		return S_ISLNK(sb.st_mode);
+	return S_ISREG(sb.st_mode);
+}
+
+static const struct level_ops *so_get_level(char *code)
 {
 	char path[MAX_PATH_LEN];
 	size_t pos;
@@ -24,6 +40,9 @@ const struct level_ops *app_get_level(char *code)
 	pos = strlcpy(path, LEVELS_DIR, MAX_PATH_LEN);
 	pos += strlcpy(path + pos, code, MAX_PATH_LEN - pos);
 	pos += strlcpy(path + pos, ".so", MAX_PATH_LEN - pos);
+	if (!file_exists(path, false))
+		return NULL;
+
 	handle = dlopen(path, RTLD_NOW);
 	err = dlerror();
 	if (!handle) {
@@ -45,6 +64,47 @@ const struct level_ops *app_get_level(char *code)
 		ops->init();
 	dirty = true;
 	return ops;
+}
+
+static const struct level_ops *py_get_level(char *code)
+{
+	char path[MAX_PYPATH_LEN];
+	char sl[LOGIN_LEN + 3 + 1];
+	size_t pos;
+	ssize_t len;
+
+	pos = strlcpy(path, PYLEVELS_DIR, MAX_PYPATH_LEN);
+	pos += strlcpy(path + pos, "code_", MAX_PYPATH_LEN - pos);
+	pos += strlcpy(path + pos, code, MAX_PYPATH_LEN - pos);
+	if (!file_exists(path, true))
+		return NULL;
+	len = readlink(path, sl, sizeof(sl));
+	if (len < 0) {
+		log_err("cannot read symlink %s", path);
+		return NULL;
+	}
+	if (len == sizeof(sl))
+		len--;
+	sl[len] = '\0';
+
+	pos = strlcpy(path, PYLEVELS_DIR, MAX_PYPATH_LEN);
+	pos += strlcpy(path + pos, sl, MAX_PYPATH_LEN - pos);
+	if (!file_exists(path, false)) {
+		log_err("dangling symlink to %s", path);
+		return NULL;
+	}
+
+	return pyb_load(path);
+}
+
+const struct level_ops *app_get_level(char *code)
+{
+	const struct level_ops *res;
+
+	res = so_get_level(code);
+	if (res)
+		return res;
+	return py_get_level(code);
 }
 
 void app_redraw(const struct level_ops *level)

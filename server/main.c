@@ -1,3 +1,4 @@
+#include <string.h>
 #include "app.h"
 #include "common.h"
 #include "db.h"
@@ -6,6 +7,7 @@
 #include "ipc.h"
 #include "log.h"
 #include "proto.h"
+#include "pybindings.h"
 #include "spawn.h"
 #include "websocket_data.h"
 #include "websocket_http.h"
@@ -35,10 +37,16 @@ static void init_child(int argc __unused, char **argv)
 
 int main(int argc, char **argv)
 {
-	if (argc > 1)
+	if (argc > 1) {
+		if (!strcmp(argv[1], "-i")) {
+			log_init("<python>");
+			pyb_interactive();
+			return 0;
+		}
 		init_child(argc, argv);
-	else
+	} else {
 		init_master(argc, argv);
+	}
 	log_info("started");
 	check(event_loop());
 	log_info("terminating cleanly");

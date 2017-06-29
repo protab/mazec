@@ -1,0 +1,13 @@
+#!/bin/bash
+{
+echo "all: all2"
+list=
+for f in *.py; do
+	code=$(sed -n "s/^set_level[ \\t]*([ \\t]*[\"']\\([^\"']*\\).*/\\1/p" "$f")
+	[[ -z $code ]] && continue
+	list="$list code_$code"
+	echo "code_$code: $f"
+	echo '	ln -s $< $@'
+done
+echo "all2:$list"
+} > Makefile
