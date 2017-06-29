@@ -177,6 +177,14 @@ static bool nope_check(PyObject *o)
 	return false; /* silence gcc */
 }
 
+static long to_long(PyObject *o)
+{
+	long res = PyLong_AsLong(o);
+	if (PyErr_Occurred())
+		fatal();
+	return res;
+}
+
 /* drawing functions exported to Python */
 
 static PyObject *f_draw_dirty(PyObject *self __unused, PyObject *args __unused)
@@ -358,9 +366,7 @@ char *pyb_what(void *data, int x, int y, int *res)
 	PyObject *o = PyObject_CallMethod(d->obj, "what", "ii", x, y);
 	if (nope_check(o))
 		return exc_err();
-	*res = PyLong_AsLong(o);
-	if (PyErr_Occurred())
-		fatal();
+	*res = to_long(o);
 	Py_DECREF(o);
 	return NULL;
 }
@@ -379,9 +385,7 @@ char *pyb_maze(void *data, unsigned char **res, unsigned *len)
 	*res = salloc(seqlen);
 	for (Py_ssize_t i = 0; i < seqlen; i++) {
 		PyObject *o = PySequence_Fast_GET_ITEM(seq, i);
-		(*res)[i] = PyLong_AsLong(o);
-		if (PyErr_Occurred())
-			fatal();
+		(*res)[i] = to_long(o);
 	}
 	Py_DECREF(seq);
 	Py_DECREF(seqret);
@@ -395,9 +399,7 @@ char *pyb_get(void *data, const char *attr, int *res)
 	PyObject *o = PyObject_GetAttrString(d->obj, attr);
 	if (nope_check(o))
 		return exc_err();
-	*res = PyLong_AsLong(o);
-	if (PyErr_Occurred())
-		fatal();
+	*res = to_long(o);
 	Py_DECREF(o);
 	return NULL;
 }
@@ -452,6 +454,16 @@ static struct level_ops ops = {
 	.redraw = pyb_redraw,
 };
 
+static void set_level_parms(void)
+{
+	PyObject *max_conn = c(PyObject_GetAttrString(level_cls, "max_conn"));
+	PyObject *max_time = c(PyObject_GetAttrString(level_cls, "max_time"));
+	ops.max_conn = to_long(max_conn);
+	ops.max_time = to_long(max_time);
+	Py_DECREF(max_time);
+	Py_DECREF(max_conn);
+}
+
 static bool pyb_init()
 {
 
@@ -505,6 +517,7 @@ struct level_ops *pyb_load(const char *path)
 		log_err("python: the Python level did not call set_level");
 		exit(1);
 	}
+	set_level_parms();
 
 	return &ops;
 }

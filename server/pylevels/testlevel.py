@@ -1,6 +1,7 @@
 from mazec import *
 
 class Level(BaseLevel):
+    max_conn = 10
     w = draw.MOD_WIDTH
     h = draw.MOD_HEIGHT
 
