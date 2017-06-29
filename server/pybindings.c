@@ -298,6 +298,16 @@ static PyObject *f_draw_dirty(PyObject *self __unused, PyObject *args __unused)
 	Py_RETURN_NONE;
 }
 
+static PyObject *f_draw_bank(PyObject *self __unused, PyObject *args)
+{
+	int bank;
+
+	if (!PyArg_ParseTuple(args, "i:bank", &bank))
+		return NULL;
+	draw_set_bank(bank);
+	Py_RETURN_NONE;
+}
+
 static PyObject *f_draw_clear(PyObject *self __unused, PyObject *args __unused)
 {
 	draw_clear();
@@ -333,6 +343,10 @@ static PyMethodDef draw_methods[] = {
 	  "Marks the remote screen as dirty. Call whenever there's a change to the display.\n"
 	  "If the level is large and there are off screen changes, it is advisable not to\n"
 	  "call this function when the change is not visible." },
+	{ "bank", f_draw_bank, METH_VARARGS,
+	  "bank(id)\n--\n\n"
+	  "Sets the image bank to a value between 0 and 255. The selected image bank\n"
+	  "applies to all items. The default bank is 0." },
 	{ "clear", f_draw_clear, METH_NOARGS,
 	  "clear()\n--\n\n"
 	  "Clears the whole screen." },

@@ -14,7 +14,7 @@ níže rozšířen. K tomu budou využity rezervované bity.)
 Formát zprávy od serveru
 ------------------------
 
-Každá zpráva začíná tříbajtovou hlavičkou (bajty jsou v pořadí odshora
+Každá zpráva začíná čtyřbajtovou hlavičkou (bajty jsou v pořadí odshora
 dolů):
 
     7   6   5   4   3   2   1   0
@@ -32,6 +32,11 @@ dolů):
   |            sec lo             |
   +---+---+---+---+---+---+---+---+
 
+    7   6   5   4   3   2   1   0
+  +---+---+---+---+---+---+---+---+
+  |           img bank            |
+  +---+---+---+---+---+---+---+---+
+
 Souřadnice levého horního rohu výřezu jsou [x_ofs + 15, y_ofs + 15].
 Velikost výřezu je vždy 495 x 495 pixelů.
 
@@ -45,9 +50,13 @@ limit.
 "b2" je tlačítko s názvem "Ukončit". Je-li příslušný bit nastaven, je
 tlačítko zobrazeno, není-li nastaven, není zobrazeno.
 
-Bity "R" jsou rezervované a příjemce je může ignorovat. Příjemce nesmí
-předpokládat, že rezervované bity mají hodnotu 0. (To platí i pro všechna
-"R" dále v tomto dokumentu.)
+"img_bank" obsahuje identifikátor banky obrázků. Identifikátor se převede na
+textovou hodnotu tak, že se vyjádří v desítkové soustavě a případně doplní
+zleva nulou, aby měl právě dva znaky.
+
+
+Bity "R" kdekoliv v popisu formátu jsou rezervované a příjemce je může
+ignorovat. Příjemce nesmí předpokládat, že rezervované bity mají hodnotu 0.
 
 
 Po hlavičce následuje popis 1156 políček (tj. 34 x 34 políček). Popis je
@@ -68,9 +77,12 @@ Formát popisu jednoho políčka je následující:
 
 "sprite" udává číslo obrázku, který se má zobrazit na souřadnicích políčka.
 Obrázek má velikost 15 x 15 pixelů a lze ho získat z URL
-http://protab./static/img/2017/sprite%02d.png. Obrázek č. 0 je černý čtverec
-a lze to o něm předpokládat. Je tedy možné na začátku smazat herní plochu
-a pro sprite č. 0 prostě dané políčko přeskočit.
+http://protab./static/img/2017/<img_bank>/%02d.png, přičemž <img_bank> je
+nahrazeno textovým identifikátorem banky.
+
+Obrázek č. 0 je ve všech bankách černý čtverec a lze to o něm předpokládat.
+Je tedy možné na začátku smazat herní plochu a pro sprite č. 0 prostě dané
+políčko přeskočit.
 
 Není-li nastavent bit "rle", následuje popis dalšího políčka. Je-li bit
 "rle" nastaven, následuje ještě jeden bajt:

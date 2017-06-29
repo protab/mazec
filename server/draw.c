@@ -15,6 +15,7 @@ struct sprite {
 
 static int seconds;
 static unsigned buttons;
+static int bank;
 static int x_orig, y_orig;
 static int x_start, y_start;
 static unsigned char fixed[(DRAW_MOD_WIDTH + 1) * (DRAW_MOD_HEIGHT + 1)];
@@ -23,7 +24,7 @@ static struct sprite **floating_last;
 
 #define fixed_coords(x, y)	((y) * (DRAW_MOD_WIDTH + 1) + (x))
 
-#define MSG_MAX_LEN	(3 + sizeof(fixed) + 4 * (DRAW_MOD_WIDTH + 2) * (DRAW_MOD_HEIGHT + 2))
+#define MSG_MAX_LEN	(4 + sizeof(fixed) + 4 * (DRAW_MOD_WIDTH + 2) * (DRAW_MOD_HEIGHT + 2))
 static unsigned char *msg;
 static unsigned int msg_len;
 static bool was_changed;
@@ -32,6 +33,7 @@ void draw_init(void)
 {
 	seconds = -1;
 	buttons = 0;
+	bank = 0;
 	x_orig = y_orig = 0;
 	x_start = y_start = 0;
 	floating = NULL;
@@ -73,7 +75,8 @@ void draw_force_commit(void)
 	msg[0] = (x_orig - x_start) << 4 | (y_orig - y_start);
 	msg[1] = ((rsec & 0x300) >> 2) | buttons;
 	msg[2] = rsec & 0xff;
-	msg_len = 3;
+	msg[3] = bank;
+	msg_len = 4;
 
 	cnt = 0;
 	last_color = -1;
@@ -135,6 +138,12 @@ void draw_button(unsigned int button, bool on)
 		return;
 
 	buttons = new_buttons;
+	was_changed = true;
+}
+
+void draw_set_bank(int bank_)
+{
+	bank = bank_;
 	was_changed = true;
 }
 

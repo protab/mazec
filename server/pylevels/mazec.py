@@ -41,6 +41,7 @@ class BaseLevel:
 
            The available functions for drawing are:
            draw.dirty()
+           draw.bank(id)
            draw.clear()
            draw.origin(x, y)
            draw.item(x, y, angle, color)"""

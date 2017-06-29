@@ -22,6 +22,10 @@ void draw_seconds(int seconds);
 
 void draw_button(unsigned int button, bool on);
 
+/* Sets the image bank to a value between 0 and 255. The selected image bank
+ * applies to all items. The default bank is 0. */
+void draw_set_bank(int bank);
+
 /* Clears the whole screen. */
 void draw_clear(void);
 
