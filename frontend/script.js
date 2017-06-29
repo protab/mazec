@@ -98,18 +98,28 @@ function rerender() {
     render(map);
 }
 
-function loadAndSaveAllSprites() {
-    globalState.images = []
+function loadSprites(bank) {
+    if (bank == globalState['bank'])
+        return;
+    globalState['bank'] = bank;
+    var idbank = ('0' + bank.toString());
+    idbank = idbank.substr(idbank.length - 2);
     for (var i = 0; i <= 0x1f; i++) {
         var img = new Image()
         var id = ('0' + i.toString());
         id = id.substr(id.length - 2);
-        // img.src = 'http://protab./static/img/2017/sprite' + id + '.png'
-        img.src = 'img/sprite' + id + '.png'
+        // img.src = 'http://protab./static/img/2017/' + idbank + '/' + id + '.png';
+        img.src = 'img/' + idbank + '/' + id + '.png';
         globalState.images[i] = img;
     }
 }
-window.addEventListener('load', loadAndSaveAllSprites)
+
+function loadSprites0() {
+    globalState.images = [];
+    globalState['bank'] = -1;
+    loadSprites(0);
+}
+window.addEventListener('load', loadSprites0)
 
 /*************************** CONNECTION MANAGEMENT ****************************/
 
@@ -149,6 +159,7 @@ function init() {
             button_end: (data[1] & 0x02) > 0,
             time_left: data[2] + ((data[1] & 0xc0) >>> 6) * 256
         }
+        var bank = data[3];
 
         if(DEBUG) {
             console.log('Header:');
@@ -158,7 +169,7 @@ function init() {
         // TILES
 
         var tiles = []
-        var bi = 3;
+        var bi = 4;
 
         var t = 0;
         var repeat = 1;
@@ -212,6 +223,7 @@ function init() {
             'header': header
         };
 
+        loadSprites(bank);
         render(map);
     };
     socket.onclose = function(event) {
