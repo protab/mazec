@@ -1,5 +1,14 @@
 from mazec import *
 
+class FallTimer(Timer):
+    def __init__(self, obj):
+        self.obj = obj
+
+    def fired(self, count):
+        self.obj.y += count
+        draw.dirty()
+
+
 class Level(BaseLevel):
     max_conn = 10
     w = draw.MOD_WIDTH
@@ -7,7 +16,9 @@ class Level(BaseLevel):
 
     def __init__(self):
         self.x = draw.MOD_WIDTH // 2
-        self.y = draw.MOD_HEIGHT // 2
+        self.y = 0
+        self.timer = FallTimer(self)
+        self.timer.arm(1000, True)
 
     def move(self, key):
         if key == 'w':

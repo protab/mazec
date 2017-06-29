@@ -6,6 +6,7 @@
 #include "common.h"
 #include "config.h"
 #include "draw.h"
+#include "event.h"
 #include "level.h"
 #include "log.h"
 
@@ -185,6 +186,110 @@ static long to_long(PyObject *o)
 	return res;
 }
 
+/* the timer class */
+
+typedef struct {
+	PyObject_HEAD
+	int fd;
+} timer_object_t;
+
+static int cb_timer(int fd __unused, int count, void *data)
+{
+	PyObject *self = data;
+
+	Py_DECREF(c(PyObject_CallMethod(self, "fired", "i", count)));
+	return 0;
+}
+
+static void f_timer_dealloc(PyObject *selfobj)
+{
+	timer_object_t *self = (timer_object_t *)selfobj;
+
+	if (self->fd >= 0)
+		timer_del(self->fd);
+	/* It's guaranteed that after timer_del, the callback won't be
+	 * called. We may thus safely free our data here. */
+	Py_TYPE(self)->tp_free((PyObject*)self);
+}
+
+static PyObject *f_timer_new(PyTypeObject *type, PyObject *args __unused,
+			     PyObject *kwds __unused)
+{
+	timer_object_t *self = (timer_object_t *)type->tp_alloc(type, 0);
+	if (self) {
+		self->fd = timer_new(cb_timer, self, NULL);
+		if (self->fd < 0) {
+			PyErr_SetString(PyExc_OSError, "cannot allocate timer");
+			Py_DECREF(self);
+			return NULL;
+		}
+	}
+	return (PyObject *)self;
+}
+
+static PyObject *f_timer_arm(PyObject *selfobj, PyObject *args)
+{
+	timer_object_t *self = (timer_object_t *)selfobj;
+	int milisecs;
+	int repeat = 0;
+
+	if (!PyArg_ParseTuple(args, "i|p:arm", &milisecs, &repeat))
+		return NULL;
+	log_info("fd %d, milisecs %d, repeat %d", self->fd, milisecs, repeat);
+	if (timer_arm(self->fd, milisecs, repeat) < 0) {
+		PyErr_SetString(PyExc_OSError, "cannot arm timer");
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
+static PyObject *f_timer_disarm(PyObject *selfobj, PyObject *args __unused)
+{
+	timer_object_t *self = (timer_object_t *)selfobj;
+
+	if (timer_disarm(self->fd) < 0) {
+		PyErr_SetString(PyExc_OSError, "cannot disarm timer");
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
+static PyObject *f_timer_fired(PyObject *selfobj __unused, PyObject *args __unused)
+{
+	PyErr_SetString(PyExc_AssertionError, "please subclass Timer and redefine the fired method");
+	return NULL;
+}
+
+static PyMethodDef timer_methods[] = {
+	{ "arm", f_timer_arm, METH_VARARGS,
+	  "arm(milisecs, repeat=False)\n--\n\n"
+	  "Arms (sets) the given timer. It will fire after the given number of miliseconds.\n"
+	  "If repeat is False, it will be a one shot (but it's of course possible to call\n"
+	  "the arm method again), if it's True, the timer will fire repeatedly every\n"
+	  "milisecs. Each time the timer fires, the fired method is called." },
+	{ "disarm", f_timer_disarm, METH_NOARGS,
+	  "disarm()\n--\n\n"
+	  "Disarms the given timer. It's guaranteed that the fired method won't be called\n"
+	  "after this call." },
+	{ "fired", f_timer_fired, METH_VARARGS,
+	  "fired(count)\n--\n\n"
+	  "Called upon timer firing. The count parameter contains a value indicating how\n"
+	  "many times the alarm was fired since the last call. This may be greater than one\n"
+	  "in case of missing a repeated timer." },
+	{ NULL, NULL, 0, NULL }
+};
+
+static PyTypeObject timer_type = {
+	.ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "level.Timer",
+	.tp_basicsize = sizeof(timer_object_t),
+	.tp_dealloc = f_timer_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_doc = "Class for one shot and periodic timers. Create your own subclass and redefine\nthe fired method.",
+	.tp_methods = timer_methods,
+	.tp_new = f_timer_new,
+};
+
 /* drawing functions exported to Python */
 
 static PyObject *f_draw_dirty(PyObject *self __unused, PyObject *args __unused)
@@ -307,6 +412,10 @@ static PyObject *init_level_module(void)
 	cz(PyModule_AddObject(lm, "Nope", nope_exc));
 	cz(PyModule_AddObject(lm, "Win", win_exc));
 	cz(PyModule_AddObject(lm, "Lose", lose_exc));
+
+	cz(PyType_Ready(&timer_type));
+	Py_INCREF(&timer_type);
+	cz(PyModule_AddObject(lm, "Timer", (PyObject *)&timer_type));
 
 	cz(PyModule_AddObject(lm, "draw", dm));
 
