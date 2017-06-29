@@ -14,6 +14,7 @@
 #include "db.h"
 #include "draw.h"
 #include "ipc.h"
+#include "level.h"
 #include "log.h"
 #include "socket.h"
 #include "time.h"
@@ -431,6 +432,7 @@ static char *process_level(struct p_data *pd)
 	pd->bound = true;
 	pd->process = process_cmd;
 	p_bound_count++;
+	level_dirty();
 
 	p_send_ack(pd);
 	if (p_waiting)
