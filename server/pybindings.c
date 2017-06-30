@@ -496,6 +496,7 @@ char *pyb_what(void *data, int x, int y, int *res)
 
 char *pyb_maze(void *data, unsigned char **res, unsigned *len)
 {
+	static unsigned char *buf = NULL;
 	struct data_list *d = data;
 	Py_ssize_t seqlen;
 
@@ -504,8 +505,13 @@ char *pyb_maze(void *data, unsigned char **res, unsigned *len)
 		return exc_err();
 	PyObject *seq = c(PySequence_Fast(seqret, "the maze method must return a sequence"));
 	seqlen = PySequence_Fast_GET_SIZE(seq);
+
+	if (buf)
+		sfree(buf);
+	buf = salloc(seqlen);
+
 	*len = seqlen;
-	*res = salloc(seqlen);
+	*res = buf;
 	for (Py_ssize_t i = 0; i < seqlen; i++) {
 		PyObject *o = PySequence_Fast_GET_ITEM(seq, i);
 		(*res)[i] = to_long(o);
