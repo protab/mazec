@@ -366,14 +366,15 @@ int timer_arm(int fd, int milisecs, bool repeat)
 	struct timer_data *td = find_cb_data(fd);
 	struct itimerspec its;
 
+	if (td)
+		td->armed = !!milisecs;
+
 	memset(&its, 0, sizeof(its));
 	time_add(&its.it_value, milisecs);
 	if (repeat)
 		time_add(&its.it_interval, milisecs);
 	if (timerfd_settime(fd, 0, &its, NULL) < 0)
 		return -errno;
-	if (td)
-		td->armed = !!milisecs;
 	return 0;
 }
 
