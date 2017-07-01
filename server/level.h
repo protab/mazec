@@ -85,6 +85,10 @@ enum {
 	COLOR_TREASURE,
 	COLOR_KEY,
 	COLOR_DOOR,
+	COLOR_CROWN,
+	COLOR_GOLD,
+	COLOR_MONEY,
+	COLOR_CHALICE,
 };
 
 /* Mark the remote screen as dirty. Call whenever there's a change to the
