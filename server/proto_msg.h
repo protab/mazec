@@ -3,7 +3,7 @@
 
 #define P_MSG_INVALID_EOL	"Zprava musi byt ukoncena znakem LF nebo znaky CRLF."
 #define P_MSG_IMPATIENT		"Je mozne poslat pouze jednu zpravu najednou. Pred odeslanim dalsi pockej na odpoved serveru. Anebo posilas znaky navic po znaku konce radku."
-#define P_MSG_CONN_TOO_MANY	"Navazujes najednou vice spojeni, nez povoluje aktualni uloha."
+#define P_MSG_CONN_TOO_MANY	"Navazujes najednou vice spojeni, nez uloha povoluje."
 #define P_MSG_CMD_NO_LETTER	"Zprava musi zacinat prikazem, ktery ma presne 4 znaky. Tyto znaky musi byt velka pismena."
 #define P_MSG_CMD_EXTRA_CHARS	"Zprava musi zacinat prikazem, ktery ma presne 4 znaky. Za temito znaky musi nasledovat mezera nebo konec radku."
 #define P_MSG_CMD_UNKNOWN	"Neznamy prikaz."
