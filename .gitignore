@@ -6,3 +6,4 @@ levels/Makefile
 pylevels/code_*
 pylevels/Makefile
 pylevels/__pycache__
+tags
