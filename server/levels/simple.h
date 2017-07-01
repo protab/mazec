@@ -54,12 +54,12 @@ void simple_move_commit(void *data);
 			    start_x, start_y, 0);			\
 	}
 
-#define SIMPLE_DEFINE(max_conn_, max_time_, init_, move_)		\
+#define SIMPLE_DEFINE_CUSTOM(max_conn_, max_time_, init_, gdata, move_)	\
 	const struct level_ops level_ops = {				\
 		.max_conn = max_conn_,					\
 		.max_time = max_time_,					\
 		.init = init_,						\
-		.get_data = simple_get_data,				\
+		.get_data = gdata,					\
 		.free_data = simple_free_data,				\
 		.move = move_,						\
 		.what = simple_what,					\
@@ -70,5 +70,9 @@ void simple_move_commit(void *data);
 		.get_h = simple_get_h,					\
 		.redraw = simple_redraw,				\
 	}
+
+#define SIMPLE_DEFINE(max_conn_, max_time_, init_, move_)		\
+	SIMPLE_DEFINE_CUSTOM(max_conn_, max_time_, init_,		\
+			     simple_get_data, move_)
 
 #endif
