@@ -1,5 +1,6 @@
 *.o
 mazec
+config.h
 levels/*.so
 levels/Makefile
 pylevels/code_*

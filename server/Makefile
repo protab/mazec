@@ -10,8 +10,8 @@ PY_LDFLAGS = $(shell pkg-config --libs $(pypkg))
 
 all: mazec build_levels build_pylevels
 
-mazec: $(OBJS)
-	gcc $(LDFLAGS) $(PY_LDFLAGS) -o $@ $+
+mazec: config.h $(OBJS)
+	gcc $(LDFLAGS) $(PY_LDFLAGS) -o $@ $(OBJS)
 
 main.o: main.c
 	gcc $(CFLAGS) -c -o $@ $<
@@ -21,6 +21,9 @@ pybindings.o: pybindings.c pybindings.h
 
 %.o: %.c %.h
 	gcc $(CFLAGS) -c -o $@ $<
+
+config.h: config.defaults
+	scripts/build_config
 
 build_levels: levels/Makefile
 	make -C levels
@@ -39,3 +42,6 @@ pylevels/Makefile:
 clean:
 	rm -f $(OBJS) mazec levels/*.o levels/*.so levels/Makefile pylevels/code_* pylevels/Makefile
 	rm -rf pylevels/__pycache__
+
+distclean: clean
+	rm -f config.h

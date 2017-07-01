@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+import os, sys
+
+def error():
+    sys.stderr.write('Could not make sense of config.h, please run "make clean".\n')
+    sys.exit(1)
+
+where = -1
+output = []
+config = {}
+try:
+    with open('config.h', 'r') as f:
+        for i, s in enumerate(f.readlines()):
+            s = s.rstrip()
+            output.append(s)
+            if s.startswith('#define'):
+                _, d = s.split(maxsplit=1)
+                if d == 'CONFIG_H':
+                    continue
+                k, v = d.split(maxsplit=1)
+                config[k] = v
+            if s.startswith('#endif'):
+                where = i
+except FileNotFoundError:
+    pass
+except ValueError:
+    error()
+
+defaults = []
+with open('config.defaults', 'r') as f:
+    for s in f.readlines():
+        s = s.strip()
+        if not s:
+            continue
+        k, v = s.split(maxsplit=1)
+        if k not in config:
+            defaults.append((k, v))
+
+if not defaults:
+    os.utime('config.h')
+    sys.exit(0)
+
+if not output:
+    output = [ '#ifndef CONFIG_H', '#define CONFIG_H', '', '', '#endif' ]
+    where = 3
+else:
+    if where < 2:
+        error()
+    if output[where - 1] == '':
+        where -= 1
+
+with open('config.h', 'w') as f:
+    for i, s in enumerate(output):
+        if i == where:
+            for k, v in defaults:
+                f.write('#define {}\t{}\n'.format(k, v))
+        f.write('{}\n'.format(s))

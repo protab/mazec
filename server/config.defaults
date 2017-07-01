@@ -1,0 +1,4 @@
+DB_PATH		"./users"
+LEVELS_DIR	"./levels/"
+PYLEVELS_DIR	"./pylevels/"
+LOGIN_LEN	30
