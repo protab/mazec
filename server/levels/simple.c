@@ -206,6 +206,26 @@ static void update_viewport(void)
 	}
 }
 
+void simple_ensure_visible(int x, int y)
+{
+	int new_x = origin_x, new_y = origin_y;
+
+	if (x < origin_x)
+		new_x = x;
+	else if (x >= origin_x + DRAW_MOD_WIDTH)
+		new_x = x - DRAW_MOD_WIDTH + 1;
+	if (y < origin_y)
+		new_y = y;
+	else if (y >= origin_y + DRAW_MOD_HEIGHT)
+		new_y = y - DRAW_MOD_HEIGHT + 1;
+	if (new_x != origin_x || new_y != origin_y) {
+		origin_x = new_x;
+		origin_y = new_y;
+		update_viewport();
+		level_dirty();
+	}
+}
+
 void simple_redraw(void)
 {
 	int x_min, y_min, x_max, y_max;

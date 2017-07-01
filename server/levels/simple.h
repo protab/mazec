@@ -39,6 +39,9 @@ void simple_redraw(void);
  * 'angle' field in 'data' is modified. */
 void simple_move_commit(void *data);
 
+/* Shift the actual viewport to contain the given point. */
+void simple_ensure_visible(int x, int y);
+
 /* Move helpers and simple callbacks. See grid.h for details. */
 #define simple_try_move		grid_try_move
 #define simple_try_o_move	grid_try_o_move
