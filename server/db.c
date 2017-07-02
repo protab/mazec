@@ -206,7 +206,7 @@ void db_end_process(pid_t pid)
 	if (!u)
 		u = find_pid(inactive, pid);
 	if (!u) {
-		log_err("unknown pid %d reported as killed", pid);
+		log_info("unknown pid %d reported as killed", pid);
 		return;
 	}
 	socket_del(u->pipe);

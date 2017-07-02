@@ -30,7 +30,7 @@ static void init_child(int argc __unused, char **argv)
 	check(event_init());
 	log_init(argv[1]);
 	check(ipc_client_init());
-	proto_client_init(event_quit);
+	proto_client_init(argv[1], event_quit);
 	websocket_init(app_remote_command, proto_cond_close);
 	draw_init();
 }

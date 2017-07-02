@@ -17,6 +17,7 @@
 #include "level.h"
 #include "log.h"
 #include "socket.h"
+#include "spawn.h"
 #include "time.h"
 
 #define BUF_SIZE	1024
@@ -48,6 +49,7 @@ struct p_data {
 
 static struct p_data *p_sockets;
 
+static char *p_login;
 static proto_close_cb_t p_close_cb;
 static int p_count;
 static int p_bound_count;
@@ -152,9 +154,34 @@ static void p_report_error(struct p_data *pd, char *msg)
 
 static void p_report_win(struct p_data *pd, char *msg)
 {
-	log_info("winner, closing app socket fd %d", socket_get_fd(pd->s));
+	char buf[BUF_SIZE + 1];
+	int res;
+
+	log_info("winner, running: %s %s %s", PLUMBING, p_login, p_code);
+	res = exec_wait(buf, BUF_SIZE + 1, PLUMBING, p_login, p_code, NULL);
+	if (res < 0) {
+		log_err("error recording the result (%d)", res);
+	} else if (!strncmp(buf, "ERROR: ", 7)) {
+		log_err("returned %s", buf);
+		res = -1;
+	} else if (!strncmp(buf, "REPORT: ", 8)) {
+		if (buf[res - 1] == '\n')
+			buf[--res] = '\0';
+		if (res == 8) {
+			log_err("error: empty report received");
+			res = -1;
+		} else {
+			msg = buf + 8;
+			log_info("reporting %s", msg);
+		}
+	} else if (strncmp(buf, "OK", 2)) {
+		log_err("unexpected output: %s", buf);
+		res = -1;
+	}
+	if (res < 0)
+		msg = "Vyskytla se neocekavana chyba pri zaznamenavani vysledku.";
+	log_info("closing app socket fd %d", socket_get_fd(pd->s));
 	p_report_and_close(pd, "OVER", msg);
-	// TODO: store to database
 }
 
 static char *process_msg_chunk(struct p_data *pd, char *buf, size_t count)
@@ -476,9 +503,10 @@ int proto_server_init(unsigned port)
 	return socket_listen(port, p_server_new, p_read, p_server_free);
 }
 
-void proto_client_init(proto_close_cb_t close_cb)
+void proto_client_init(char *login, proto_close_cb_t close_cb)
 {
 	p_sockets = NULL;
+	p_login = login;
 	p_close_cb = close_cb;
 	p_count = 0;
 	p_bound_count = 0;

@@ -7,7 +7,7 @@
 typedef void (*proto_close_cb_t)(void);
 
 int proto_server_init(unsigned port);
-void proto_client_init(proto_close_cb_t close_cb);
+void proto_client_init(char *login, proto_close_cb_t close_cb);
 
 /* Closes the fd even if unsuccessful. */
 int proto_client_add(int fd, bool crlf);
