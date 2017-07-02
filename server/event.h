@@ -2,6 +2,7 @@
 #define EVENT_H
 #include <stdbool.h>
 #include <sys/epoll.h>
+#include <sys/types.h>
 
 #define EV_READ		EPOLLIN
 #define EV_WRITE	EPOLLOUT
@@ -24,6 +25,7 @@ int event_pause_fd(int fd, bool pause);
 int event_change_fd(int fd, unsigned events);
 int event_change_fd_add(int fd, unsigned events);
 int event_change_fd_remove(int fd, unsigned events);
+void event_ignore_pid(pid_t pid);
 int event_loop(void);
 void event_quit(void);
 

@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include "common.h"
 #include "db.h"
+#include "event.h"
 #include "log.h"
 
 static char *prg_path;
@@ -100,6 +101,7 @@ int exec_wait(char *out, int out_size, char *prg, ...)
 
 		close(fd[1]);
 		sfree(argv);
+		event_ignore_pid(pid);
 
 		log_info("spawned child pid %d", pid);
 		while (true) {

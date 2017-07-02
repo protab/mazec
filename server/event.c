@@ -9,7 +9,6 @@
 #include <sys/epoll.h>
 #include <sys/signalfd.h>
 #include <sys/timerfd.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -38,6 +37,7 @@ struct timer_data {
 
 static int epfd;
 static int sigfd;
+static pid_t ignored_pid;
 static bool quit;
 
 #define FDD_HASH_SIZE	256
@@ -74,7 +74,10 @@ static int sig_handler(int fd, unsigned events __unused, void *data __unused)
 					log_info("child %d was killed with signal %d", pid, WTERMSIG(status));
 				else
 					log_info("child %d weirdly exited (%d)", pid, status);
-				db_end_process(pid);
+				if (pid == ignored_pid)
+					ignored_pid = 0;
+				else
+					db_end_process(pid);
 			}
 			break;
 		}
@@ -88,6 +91,7 @@ int event_init(void)
 	int ret;
 
 	memset(fdd_hash, 0, sizeof(fdd_hash));
+	ignored_pid = 0;
 
 	epfd = epoll_create1(EPOLL_CLOEXEC);
 	if (epfd < 0)
@@ -248,6 +252,11 @@ int event_change_fd_remove(int fd, unsigned events)
 		return -ENOENT;
 	fdd->events &= ~events;
 	return event_change_fd_data(fdd, -1);
+}
+
+void event_ignore_pid(pid_t pid)
+{
+	ignored_pid = pid;
 }
 
 static void release_deleted(void)
