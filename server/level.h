@@ -2,6 +2,7 @@
 #define LEVEL_H
 #include <stdbool.h>
 #include <stdlib.h>
+#include "event.h"
 
 /* The access code for the level. Each level must call this macro. */
 #define LEVEL_CODE(code)
@@ -95,5 +96,32 @@ enum {
  * display. If the level is large and there are off screen changes, it is
  * advisable not to call this function when the change is not visible. */
 void level_dirty(void);
+
+
+/* IN LEVEL TIMERS. Levels must use these functions for timer functionality.
+ * Levels must NOT use the timer_* functions from event.h. */
+
+/* Adds a new timer. "cb" is the callback that is called whenever the timer
+ * fires, "cb_data" is user data passed to the callback, "cb_destructor" is
+ * used to release "cb_data" when the timer is deleted. The return value is
+ * the timer identifier or < 0 in case of an error.
+ *
+ * For the callback prototypes, see event.h. */
+int level_timer_new(timer_callback_t cb, void *cb_data,
+		    cb_data_destructor_t cb_destructor);
+
+/* Arms (sets) the given timer. It will fire after the given number of
+ * miliseconds. If "repeat" is false, it will be a one shot (but it's of
+ * course possible to call "timer_arm" again), if it's true, the timer will
+ * fire repeatedly every "milisecs". */
+int level_timer_arm(int fd, int milisec, bool repeat);
+
+/* Disarms the given timer. It's guaranteed that the callback won't be
+ * called after this call. */
+int level_timer_disarm(int fd);
+
+/* Deletes the given timer. If it's armed, it will be automatically
+ * disarmed. */
+int level_timer_del(int fd);
 
 #endif

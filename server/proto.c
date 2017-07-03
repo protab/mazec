@@ -63,8 +63,10 @@ static const struct level_ops *p_level;
 static int p_draw_timer;
 static bool p_waiting;
 
-static void p_pause_all(bool enable);
+static void proto_pause(void);
 static int p_draw(int fd, int count, void *data);
+static void p_pause_timers();
+static void p_resume_timers();
 
 /* Deletes the socket if send fails. */
 static int p_send_msg(struct p_data *pd, char *cmd, char *data)
@@ -379,19 +381,7 @@ static char *process_cmd(struct p_data *pd)
 		 * socket is enabled. */
 		p_send_ack(pd);
 
-		if (!p_waiting) {
-			/* Could have two concurrent wait commands, activate
-			 * things only on the first one. */
-			p_pause_all(true);
-			draw_button(BUTTON_WAIT, true);
-			if (p_end_set) {
-				if (time_after(&p_can_pause_until))
-					p_paused_time = 0;
-				else
-					p_paused_time = time_left(&p_end);
-			}
-			p_waiting = true;
-		}
+		proto_pause();
 	} else {
 		return P_MSG_CMD_UNKNOWN;
 	}
@@ -568,7 +558,7 @@ int proto_client_add(int fd, bool crlf)
 	return p_send_ack(pd);
 }
 
-static void p_pause_all(bool pause)
+static void p_pause_sockets(bool pause)
 {
 	struct p_data *pd;
 
@@ -576,15 +566,34 @@ static void p_pause_all(bool pause)
 		socket_pause(pd->s, pause);
 }
 
+static void proto_pause(void)
+{
+	if (p_waiting)
+		/* Could have two concurrent wait commands, activate
+		 * things only on the first one. */
+		return;
+	p_pause_timers();
+	p_pause_sockets(true);
+	draw_button(BUTTON_WAIT, true);
+	if (p_end_set) {
+		if (time_after(&p_can_pause_until))
+			p_paused_time = 0;
+		else
+			p_paused_time = time_left(&p_end);
+	}
+	p_waiting = true;
+}
+
 void proto_resume(void)
 {
 	if (!p_waiting)
 		return;
 	p_waiting = false;
-	p_pause_all(false);
+	p_pause_sockets(false);
 	draw_button(BUTTON_WAIT, false);
 	if (p_end_set && p_paused_time)
 		time_from_now(&p_end, p_paused_time);
+	p_resume_timers();
 }
 
 static int p_draw(int fd __unused, int count __unused, void *data __unused)
@@ -600,4 +609,58 @@ static int p_draw(int fd __unused, int count __unused, void *data __unused)
 	}
 	app_redraw(p_level);
 	return 0;
+}
+
+/*** Level timers ***/
+
+#define MAX_TIMERS	16
+static int timers[MAX_TIMERS];
+static int timers_cnt = 0;
+
+int level_timer_new(timer_callback_t cb, void *cb_data,
+		    cb_data_destructor_t cb_destructor)
+{
+	int res;
+
+	if (timers_cnt >= MAX_TIMERS)
+		return -ENOBUFS;
+	res = timer_new(cb, cb_data, cb_destructor);
+	if (res < 0)
+		return res;
+	timers[timers_cnt++] = res;
+	return res;
+}
+
+int level_timer_arm(int fd, int milisec, bool repeat)
+{
+	return timer_arm(fd, milisec, repeat);
+}
+
+int level_timer_disarm(int fd)
+{
+	return level_timer_disarm(fd);
+}
+
+int level_timer_del(int fd)
+{
+	for (int i = 0; i < timers_cnt; i++)
+		if (fd == timers[i]) {
+			memmove(timers + i, timers + i + 1,
+				sizeof(timers[0]) * (timers_cnt - i - 1));
+			timers_cnt--;
+			break;
+		}
+	return timer_del(fd);
+}
+
+static void p_pause_timers()
+{
+	for (int i = 0; i < timers_cnt; i++)
+		timer_pause(timers[i]);
+}
+
+static void p_resume_timers()
+{
+	for (int i = 0; i < timers_cnt; i++)
+		timer_resume(timers[i]);
 }
