@@ -32,7 +32,10 @@ struct timer_data {
 	timer_callback_t cb;
 	void *cb_data;
 	cb_data_destructor_t cb_destructor;
+	struct itimerspec resume_time;
+	int resume_backlog;
 	bool armed;
+	bool paused;
 };
 
 static int epfd;
@@ -330,6 +333,10 @@ static int timer_cb(int fd, unsigned events, void *data)
 	count = timer_get_count(fd);
 	if (!td->armed)
 		return 0;
+	if (td->paused) {
+		td->resume_backlog += count;
+		return 0;
+	}
 	return td->cb(fd, count, td->cb_data);
 }
 
@@ -349,11 +356,10 @@ int timer_new(timer_callback_t cb, void *cb_data,
 	int fd;
 	int ret;
 
-	td = salloc(sizeof(*td));
+	td = szalloc(sizeof(*td));
 	td->cb = cb;
 	td->cb_data = cb_data;
 	td->cb_destructor = cb_destructor;
-	td->armed = false;
 	fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 	if (fd < 0) {
 		free(td);
@@ -373,8 +379,10 @@ int timer_arm(int fd, int milisecs, bool repeat)
 	struct timer_data *td = find_cb_data(fd);
 	struct itimerspec its;
 
-	if (td)
+	if (td) {
 		td->armed = !!milisecs;
+		td->paused = false;
+	}
 
 	memset(&its, 0, sizeof(its));
 	time_add(&its.it_value, milisecs);
@@ -388,6 +396,39 @@ int timer_arm(int fd, int milisecs, bool repeat)
 int timer_disarm(int fd)
 {
 	return timer_arm(fd, 0, false);
+}
+
+int timer_pause(int fd)
+{
+	struct timer_data *td = find_cb_data(fd);
+	struct itimerspec its;
+
+	if (!fd)
+		return -EINVAL;
+	if (td->paused)
+		return 0;
+	memset(&its, 0, sizeof(its));
+	if (timerfd_settime(fd, 0, &its, &td->resume_time) < 0)
+		return -errno;
+	td->resume_backlog = 0;
+	td->paused = true;
+	return 0;
+}
+
+int timer_resume(int fd)
+{
+	struct timer_data *td = find_cb_data(fd);
+
+	if (!fd)
+		return -EINVAL;
+	if (!td->paused)
+		return 0;
+	if (timerfd_settime(fd, 0, &td->resume_time, NULL) < 0)
+		return -errno;
+	td->paused = false;
+	if (td->resume_backlog)
+		return td->cb(fd, td->resume_backlog, td->cb_data);
+	return 0;
 }
 
 int timer_del(int fd)

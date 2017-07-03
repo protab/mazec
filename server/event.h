@@ -52,6 +52,14 @@ int timer_arm(int fd, int milisecs, bool repeat);
  * called after this call. */
 int timer_disarm(int fd);
 
+/* Pauses the given timer. If the callback has been already scheduled, it
+ * will be fired right after resume. */
+int timer_pause(int fd);
+
+/* Resumes the given timer. Be aware that the callback may be called from
+ * within this function! */
+int timer_resume(int fd);
+
 /* Deletes the given timer. If it's armed, it will be automatically
  * disarmed. */
 int timer_del(int fd);
