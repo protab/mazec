@@ -35,6 +35,7 @@ function handleButtonsAndClock(header) {
 
 function render(map) {
     globalState['map'] = map;
+    var bankStr = globalState['bank'];
 
     var canvas = document.getElementById('canvas');
     var context = canvas.getContext('2d');
@@ -63,7 +64,7 @@ function render(map) {
     for (var i in map.tiles) {
         var coords = getTileCoords(i, map.header);
         try {
-            context.drawImage(globalState.images[map.tiles[i]], coords[0], coords[1])
+            context.drawImage(globalState.images[bankStr][map.tiles[i]], coords[0], coords[1])
         } catch (e) {
             var missing = document.getElementById("missing");
             context.drawImage(missing, coords[0], coords[1]);
@@ -74,7 +75,7 @@ function render(map) {
     for (var i in map.floating_tiles) {
         var x = map.floating_tiles[i].x + 7 - map.header.x_ofs;
         var y = map.floating_tiles[i].y + 7 - map.header.y_ofs;
-        var image = globalState.images[map.floating_tiles[i].sprite];
+        var image = globalState.images[bankStr][map.floating_tiles[i].sprite];
         var width = image.width;
         var height = image.height;
         var angle = map.floating_tiles[i].rotation * Math.PI / 180;
@@ -99,27 +100,30 @@ function rerender() {
 }
 
 function loadSprites(bank) {
-    if (bank == globalState['bank'])
+    var bankStr = ('0' + bank.toString());
+    bankStr = bankStr.substr(bankStr.length - 2);
+
+    globalState['bank'] = bankStr;
+
+    if (bankStr in globalState['images'])
         return;
-    globalState['bank'] = bank;
-    var idbank = ('0' + bank.toString());
-    idbank = idbank.substr(idbank.length - 2);
+
+    globalState.images[bankStr] = []
     for (var i = 0; i <= 0x1f; i++) {
         var img = new Image()
         var id = ('0' + i.toString());
         id = id.substr(id.length - 2);
-        // img.src = 'http://protab./static/img/2017/' + idbank + '/' + id + '.png';
-        img.src = 'img/' + idbank + '/' + id + '.png';
-        globalState.images[i] = img;
+        // img.src = 'http://protab./static/img/2017/' + bankStr + '/' + id + '.png';
+        img.src = 'img/' + bankStr + '/' + id + '.png';
+        globalState.images[bankStr][i] = img;
     }
 }
 
-function loadSprites0() {
-    globalState.images = [];
-    globalState['bank'] = -1;
+function initSprites() {
+    globalState.images = {};
     loadSprites(0);
 }
-window.addEventListener('load', loadSprites0)
+window.addEventListener('load', initSprites)
 
 /*************************** CONNECTION MANAGEMENT ****************************/
 
