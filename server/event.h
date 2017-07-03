@@ -9,9 +9,8 @@
 #define EV_SOCK		EPOLLRDHUP
 #define EV_ERROR	(EPOLLERR | EPOLLHUP | EPOLLRDHUP)
 
-/* Return values: 0 to keep, 1 to disable (but not remove!), < 0 to
- * signalize error and terminate the event loop. To cleanly shutdown, call
- * event_quit. */
+/* Return values: 0 to indicate success, < 0 to signalize error and
+ * terminate the event loop. To cleanly shutdown, call event_quit. */
 typedef int (*event_callback_t)(int fd, unsigned events, void *data);
 
 typedef void (*cb_data_destructor_t)(void *data);

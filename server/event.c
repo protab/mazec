@@ -280,7 +280,7 @@ int event_loop(void)
 	int ret = 0;
 
 	quit = false;
-	while (ret >= 0 && !quit) {
+	while (!ret && !quit) {
 		release_deleted();
 		/* re-check as a destructor may have called event_quit */
 		if (quit)
@@ -297,13 +297,11 @@ int event_loop(void)
 			struct fd_data *fdd = evbuf[i].data.ptr;
 
 			ret = fdd->cb(fdd->fd, evbuf[i].events, fdd->cb_data);
-			if (ret > 0)
-				event_change_fd_data(fdd, 0);
-			else if (ret < 0)
+			if (ret < 0)
 				break;
 		}
 	}
-	return ret < 0 ? ret : 0;
+	return ret;
 }
 
 void event_quit(void)
