@@ -206,7 +206,7 @@ static void f_timer_dealloc(PyObject *selfobj)
 	timer_object_t *self = (timer_object_t *)selfobj;
 
 	if (self->fd >= 0)
-		timer_del(self->fd);
+		level_timer_del(self->fd);
 	/* It's guaranteed that after timer_del, the callback won't be
 	 * called. We may thus safely free our data here. */
 	Py_TYPE(self)->tp_free((PyObject*)self);
@@ -217,7 +217,7 @@ static PyObject *f_timer_new(PyTypeObject *type, PyObject *args __unused,
 {
 	timer_object_t *self = (timer_object_t *)type->tp_alloc(type, 0);
 	if (self) {
-		self->fd = timer_new(cb_timer, self, NULL);
+		self->fd = level_timer_new(cb_timer, self, NULL);
 		if (self->fd < 0) {
 			PyErr_SetString(PyExc_OSError, "cannot allocate timer");
 			Py_DECREF(self);
@@ -236,7 +236,7 @@ static PyObject *f_timer_arm(PyObject *selfobj, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i|p:arm", &milisecs, &repeat))
 		return NULL;
 	log_info("fd %d, milisecs %d, repeat %d", self->fd, milisecs, repeat);
-	if (timer_arm(self->fd, milisecs, repeat) < 0) {
+	if (level_timer_arm(self->fd, milisecs, repeat) < 0) {
 		PyErr_SetString(PyExc_OSError, "cannot arm timer");
 		return NULL;
 	}
@@ -247,7 +247,7 @@ static PyObject *f_timer_disarm(PyObject *selfobj, PyObject *args __unused)
 {
 	timer_object_t *self = (timer_object_t *)selfobj;
 
-	if (timer_disarm(self->fd) < 0) {
+	if (level_timer_disarm(self->fd) < 0) {
 		PyErr_SetString(PyExc_OSError, "cannot disarm timer");
 		return NULL;
 	}
