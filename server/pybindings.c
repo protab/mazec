@@ -439,7 +439,7 @@ static PyObject *init_level_module(void)
 
 /* python callback interface */
 
-void *pyb_get_data(void)
+static void *pyb_get_data(void)
 {
 	struct data_list **last, *d;
 
@@ -456,7 +456,7 @@ void *pyb_get_data(void)
 	return d;
 }
 
-int pyb_move(void *data, char where, char **msg)
+static int pyb_move(void *data, char where, char **msg)
 {
 	struct data_list *d = data;
 	char buf[2];
@@ -510,7 +510,7 @@ int pyb_move(void *data, char where, char **msg)
 	return MOVE_OKAY;
 }
 
-char *pyb_what(void *data, int x, int y, int *res)
+static char *pyb_what(void *data, int x, int y, int *res)
 {
 	struct data_list *d = data;
 
@@ -522,7 +522,7 @@ char *pyb_what(void *data, int x, int y, int *res)
 	return NULL;
 }
 
-char *pyb_maze(void *data, unsigned char **res, unsigned *len)
+static char *pyb_maze(void *data, unsigned char **res, unsigned *len)
 {
 	static unsigned char *buf = NULL;
 	struct data_list *d = data;
@@ -549,7 +549,7 @@ char *pyb_maze(void *data, unsigned char **res, unsigned *len)
 	return NULL;
 }
 
-char *pyb_get(void *data, const char *attr, int *res)
+static char *pyb_get(void *data, const char *attr, int *res)
 {
 	struct data_list *d = data;
 
@@ -561,27 +561,27 @@ char *pyb_get(void *data, const char *attr, int *res)
 	return NULL;
 }
 
-char *pyb_get_x(void *data, int *res)
+static char *pyb_get_x(void *data, int *res)
 {
 	return pyb_get(data, "x", res);
 }
 
-char *pyb_get_y(void *data, int *res)
+static char *pyb_get_y(void *data, int *res)
 {
 	return pyb_get(data, "y", res);
 }
 
-char *pyb_get_w(void *data, int *res)
+static char *pyb_get_w(void *data, int *res)
 {
 	return pyb_get(data, "w", res);
 }
 
-char *pyb_get_h(void *data, int *res)
+static char *pyb_get_h(void *data, int *res)
 {
 	return pyb_get(data, "h", res);
 }
 
-void pyb_redraw(void)
+static void pyb_redraw(void)
 {
 	struct data_list *d = data_list;
 	PyObject *objs = c(PyTuple_New(data_list_cnt));
