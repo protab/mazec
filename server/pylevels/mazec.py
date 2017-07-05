@@ -1,3 +1,4 @@
+from functools import wraps
 from level import *
 
 class BaseLevel:
@@ -45,6 +46,23 @@ class BaseLevel:
            draw.clear()
            draw.origin(x, y)
            draw.item(x, y, angle, color)"""
+
+
+def simpleredraw(func):
+    """A decorator for draw method of levels that don't support multiple
+       connections or use just the first connection for drawing. Use this
+       decorator to turn the redraw class method into an object method.
+
+       Example:
+
+       class Level(BaseLevel):
+           @simpleredraw
+           def draw(self):
+               ..."""
+    @wraps(func)
+    def wrapper(cls, objs):
+        return func(objs[0])
+    return wrapper
 
 
 COLOR_NONE = 0
