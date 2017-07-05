@@ -13,6 +13,7 @@ class Level(BaseLevel):
     max_conn = 10
     w = draw.MOD_WIDTH
     h = draw.MOD_HEIGHT
+    allowed_moves = 'wasd'
 
     def __init__(self):
         self.x = draw.MOD_WIDTH // 2
@@ -29,8 +30,6 @@ class Level(BaseLevel):
             self.x -= 1
         elif key == 'd':
             self.x += 1
-        else:
-            raise Nope('neznamy smer')
         draw.dirty()
 
     def redraw(cls, objs):

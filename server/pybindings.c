@@ -9,6 +9,7 @@
 #include "event.h"
 #include "level.h"
 #include "log.h"
+#include "proto_msg.h"
 
 struct data_list {
 	PyObject *obj;
@@ -455,12 +456,39 @@ void *pyb_get_data(void)
 	return d;
 }
 
-int pyb_move(void *data, char c, char **msg)
+int pyb_move(void *data, char where, char **msg)
 {
 	struct data_list *d = data;
 	char buf[2];
 
-	buf[0] = c;
+	PyObject *allowed = PyObject_GetAttrString(d->obj, "allowed_moves");
+	if (!allowed) {
+		if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+			fatal();
+		PyErr_Clear();
+	} else {
+		PyObject *seq = c(PySequence_Fast(allowed, "allowed_moves must be a sequence"));
+		Py_ssize_t seqlen = PySequence_Fast_GET_SIZE(seq);
+		bool found = false;
+
+		for (Py_ssize_t i = 0; i < seqlen; i++) {
+			PyObject *o = PySequence_Fast_GET_ITEM(seq, i);
+			char *str = from_unicode(o);
+			if (str && str[0] == where)
+				found = true;
+			sfree(str);
+		}
+
+		Py_DECREF(seq);
+		Py_DECREF(allowed);
+
+		if (!found) {
+			*msg = A_MSG_UNKNOWN_MOVE;
+			return MOVE_BAD;
+		}
+	}
+
+	buf[0] = where;
 	buf[1] = '\0';
 	PyObject *o = PyObject_CallMethod(d->obj, "move", "(s)", buf);
 	if (!o) {

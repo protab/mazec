@@ -3,18 +3,34 @@ from level import *
 
 class BaseLevel:
     """The base level class. Create a subclass and register it using
-       set_level(code, class). The subclass must define x, y, w and h attributes,
-       either as class attributes or as object attributes. Use @property if you
-       need a dynamic behavior but note that w and h must be constant.
-
-       For multiple connections, each connection gets its own object.
+       set_level(code, class). For multiple connections, each connection
+       gets its own object.
 
        The base class has two class attributes:
 
        max_conn: Specifies the maximum number of concurrent connections to this
                  level.
        max_time: Specifies the maximum number of seconds that are available
-                 to solve the level."""
+                 to solve the level.
+
+       Subclasses must define these attributes, either as class or object
+       attributes:
+
+       x: The current position, x axis (usually an object attribute).
+       y: The current position, y axis (usually an object attribute).
+       w: Width of the playing field (usually a class attribute).
+       h: Height of the playing field (usually a class attribute).
+
+       If a dynamic behavior is needed, use @property. Note though that the
+       values of w and h must remain constant.
+
+       In addition, the subclass may define this attribute (again, either as
+       a class or object attribute or a property):
+
+       allowed_moves: An iterable (e.g. a string, list or tuple) of
+                      characters that are allowed for the move method.
+                      Characters other than those will be rejected
+                      automatically."""
 
     max_conn = 1
     max_time = 0
