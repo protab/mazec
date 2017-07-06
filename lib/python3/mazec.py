@@ -46,7 +46,10 @@ class LineRPCConnection(object):
         buffsize = 512
         data = bytearray()
         while not data or data[-1] != 0x0A:
-            data += self.socket.recv(buffsize)
+            ndata = self.socket.recv(buffsize)
+            if len(ndata) == 0:
+                raise MazecException('Server uzavrel spojeni.')
+            data += ndata
         return data.decode('ascii')[:-1]
 
 
@@ -67,7 +70,7 @@ class Mazec(object):
     """Doprava"""
     RIGHT = 'D'
 
-    def __init__(self, username: str, level: str):
+    def __init__(self, username: str, level: str, use_wait=True):
         self._connection = LineRPCConnection()
 
         self._username = username
@@ -78,6 +81,8 @@ class Mazec(object):
         self.width = -1
         """Chybova hlaska posledniho pokusu o pohyb"""
         self.error = None
+
+        self.use_wait = use_wait
 
         self.open()
 
@@ -93,7 +98,8 @@ class Mazec(object):
         self._connection.open(SERVER_DOMAIN, SERVER_PORT)
         self._user(self._username)
         self._level(self._level_name)
-        self._wait()
+        if self.use_wait:
+            self._wait()
         self.height = self._get_height()
         self.width = self._get_width()
 
@@ -263,7 +269,7 @@ class Mazec(object):
         return not r
 
     @staticmethod
-    def run(username: str, level: str, loop: types.FunctionType):
+    def run(username: str, level: str, loop: types.FunctionType, use_wait=True):
         """
         Funkce implementujici zakladni pohybovy cyklus.
 
@@ -273,6 +279,6 @@ class Mazec(object):
         """
 
         success = True
-        with Mazec(username, level) as m:
+        with Mazec(username, level, use_wait=use_wait) as m:
             while True:
                 success = m.move(loop(m, success, m.error))

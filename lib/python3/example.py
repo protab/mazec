@@ -36,3 +36,8 @@ def main(m: Mazec, success: bool, error: str):
     return Mazec.UP
 
 Mazec.run('jmeno', 'level', main)
+
+
+""" Pokud nechcete mackat tlacitko "Spustit" na vykreslovatku, pridejte use_wait = False """
+m = Mazec('jmeno', 'level', use_wait=False)
+Mazec.run('jmeno', 'level', funkce, use_wait=False)
