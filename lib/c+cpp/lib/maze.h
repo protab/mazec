@@ -1,100 +1,260 @@
-#include "lib/buf.h"
+/* Ochrana proti vícenásobnému #include */
+#ifndef LIBMAZE_MAZE_H
+#define LIBMAZE_MAZE_H
 
-#define MAZE_HOST "localhost"
-#define MAZE_PORT 4000
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-enum {
-	M_OK,
-	M_ERROR,
-	M_GAME_OVER,
-	M_FORBIDDEN
-};
+typedef struct maze maze_t;
 
-typedef struct maze {
-	struct sock sock;
-	struct buf replybuf;
-	size_t width, height;
-	const char *msg;
-} maze;
+/*
+ * maze_raw_send: pošli serveru příkaz
+ ** při chybě volá error_handler
+ *
+ * maze_raw_recv: vrátí pointer na poslední přečtenou odpověď serveru
+ ** po poslání příkazu MAZE se chová nedefinovaně
+ ** možno volat opakovaně a vždy se vrátí stejný pointer
+ ** po poslání dalšího příkazu je původní pointer neplatný
+ ** při chybě volá error_handler
+ * 
+ * Uživatel nesmí poslat další příkaz před přečtením odpovědi na předchozí příkaz.
+ */
+void maze_raw_send(maze_t *m, const char *cmd);
+const char *maze_raw_recv(maze_t *m);
 
-int maze_open(maze *m, const char *username, const char *level);
-ssize_t maze_command(maze *m, const char *command, buf_t reply);
-int maze_int_command(maze *m, const char *command, size_t clen, int *reply);
-int maze_void_command(maze *m, const char *command, size_t clen);
+/*
+ * Pomocné funkce pro čtení celého bludiště.
+ * Nekombinovat s maze_raw_recv()!
+ */
+int maze_raw_recv_int(maze_t *m);
+void maze_raw_recv_flush(maze_t *m);
 
+/*
+ * Funkce maze_throw zavolá error_handler se správnými argumenty.
+ * Nikdy se nevrátí -- pokud by se error_handler vrátil, skončí celý program
+ */
+void maze_throw(maze_t *m, const char *msg);
 
-inline int maze_err(maze *m, int code, const char *msg) {
-	m->msg = msg;
-	return code;
+/*
+ * Pomocná funkce pro zkontrolování, jestli přišlo DONE.
+ */
+static inline void maze_check_done(maze_t *m) {
+  if (strcmp("DONE", maze_raw_recv(m)))
+    return maze_throw(m, "Očekávám DONE");
 }
 
-ssize_t maze_command(maze *m, const char *command, size_t clen, buf_t reply) {
-	size_t offset = 0;
-	ssize_t err;
+/*
+ * Pomocná funkce pro přečtení řádku ve formátu "DATA <int>"
+ */
+static inline int maze_get_int(maze_t *m) {
+  const char *str = maze_raw_recv(m);
+  if (strncmp("DATA ", str, 5))
+    maze_throw(m, "Server neposlal DATA");
+  int num;
+  int res = sscanf(str+5, "%d", &num);
+  if (res == 1)
+    return num;
+  if (res == 0)
+    maze_throw(m, "Server neposlal číslo");
+  if (res == EOF)
+    maze_throw(m, "Server neposlal nic");
 
-	while (offset < clen) {
-		if ((err = sock_send(&m->sock, command + offset, clen - offset)) < 0)
-			return -err;
-		offset += err;
-	}
-
-	err = buf_recvline(&m->sock, reply);
-	if (err < 0)
-		return maze_err(-M_ERROR, m->sock->msg);
-
-	if (err < 4)
-		return maze_err(-M_ERROR, "Chyba protokolu: očekávány alespoň 4 znaky");
-
-	if (!strncmp("OVER", reply->data, 4)
-		return maze_err(-M_GAME_OVER, reply->data + 5);
-
-	return M_OK;
 }
 
-int maze_int_command(maze *m, const char *command, size_t clen, int *reply) {
-	ssize_t len;
+/*
+ * Pošli libovolný příkaz, při chybě zavolej error_handler
+ */
+static inline int maze_cmd(maze_t *m, const char *cmd) {
+  maze_raw_send(m, cmd);
 
-	if ((len = maze_command(m, command, clen, &m->replybuf)) < 0)
-		return -len;
+  const char *response = maze_raw_recv(m);
+  if (strncmp("OVER ", response, 5) == 0)
+    maze_throw(m, response + 5);
 
-	if (1 != sscanf(m->replybuf->data, "DATA %d", reply))
-		return maze_err(m, M_ERROR, "Neočekávaná odpověď serveru.";
-
-	return M_OK;
+  return 0;
 }
 
-int maze_void_command(maze *m, const char *command, size_t clen) {
-	ssize_t len;
+/*
+ * Nastavuje uživatele. Normálně se tohle volá z maze_new() nebo maze_run().
+ */
+static inline void maze_user(maze_t *m, const char *user) {
+  char buf[64];
+  if (snprintf(buf, sizeof(buf), "USER %s", user) >= sizeof(buf))
+    return maze_throw(m, "Moc dlouhé jméno uživatele");
 
-	if ((len = maze_command(m, command, clen, &m->replybuf)) < 0)
-		return -len;
-
-	if (strncmp("DONE", m->replybuf->data))
-		return maze_err(m, M_ERROR, "Neočekávaná odpověď serveru.";
-
-	return M_OK;
+  maze_cmd(m, buf);
+  maze_check_done(m);
 }
 
-int maze_open(maze *m, const char *username, const char *level) {
-	int len, err;
-	char *str;
+/*
+ * Nastavuje level. Normálně se tohle volá z maze_new() nebo maze_run().
+ */
+static inline void maze_level(maze_t *m, const char *level) {
+  char buf[64];
+  if (snprintf(buf, sizeof(buf), "LEVL %s", level) >= sizeof(buf))
+    return maze_throw(m, "Moc dlouhé jméno levelu");
 
-	memset(m, 0, sizeof(struct maze));
-	if (!buf_capacity(m->replybuf, 256))
-		return maze_err(m, M_ERROR, "Nezdařilo se alokovat buffer pro odpověď.");
-
-	if (!sock_open(&m->sock, MAZE_HOST, MAZE_PORT))
-		return maze_err(m, M_ERROR, m->sock.msg);
-
-	if ((len = asprintf(&str, "USER %s", username)))
-		return maze_err(m, M_ERROR, "Nezdařilo se zkonstruovat příkaz USER.");
-
-	err = maze_void_command(m, str, len);
-	free(str);
-	if (err)
-		return err;
-
-
-
-	return M_OK;
+  maze_cmd(m, buf);
+  maze_check_done(m);
 }
+
+/*
+ * Čeká na odkliknutí uživatelem.
+ */
+static inline void maze_wait(maze_t *m) {
+  maze_cmd(m, "WAIT");
+  maze_check_done(m);
+}
+
+int maze_setw_(maze_t *m, int w);
+int maze_getw_(maze_t *m);
+int maze_seth_(maze_t *m, int h);
+int maze_geth_(maze_t *m);
+
+static inline int maze_getw(maze_t *m) {
+  maze_cmd(m, "GETW");
+  return maze_setw_(m, maze_get_int(m));
+}
+
+/* 
+ * Vrátí šířku levelu. Příkaz se pošle jen jednou, pak čte uloženou hodnotu.
+ */
+static inline int maze_width(maze_t *m) {
+  int out = maze_getw_(m);
+  if (out >= 0)
+    return out;
+  else
+    return maze_getw(m);
+}
+
+static inline int maze_geth(maze_t *m) {
+  maze_cmd(m, "GETH");
+  return maze_seth_(m, maze_get_int(m));
+}
+
+/*
+ * Vrátí výšku levelu. Příkaz se pošle jen jednou, pak čte uloženou hodnotu.
+ */
+static inline int maze_height(maze_t *m) {
+  int out = maze_geth_(m);
+  if (out >= 0)
+    return out;
+  else
+    return maze_geth(m);
+}
+
+/*
+ * Vrátí souřadnici X aktuální pozice.
+ */
+static inline int maze_x(maze_t *m) {
+  maze_cmd(m, "GETX");
+  return maze_get_int(m);
+}
+
+/*
+ * Vrátí souřadnici Y aktuální pozice.
+ */
+static inline int maze_y(maze_t *m) {
+  maze_cmd(m, "GETY");
+  return maze_get_int(m);
+}
+
+/*
+ * Vrátí obsah zadaných souřadnic.
+ */
+static inline int maze_what(maze_t *m, int x, int y) {
+  char buf[64];
+  sprintf(buf, "WHAT %d %d", x, y);
+  maze_cmd(m, buf);
+  return maze_get_int(m);
+}
+
+#define MAZE_WHAT(m, data, x, y) data[maze_width(m) * y + x]
+
+/*
+ * Vrátí celé bludiště v čerstvě alokovaném poli. Nutno uvolnit pomocí free();
+ */
+static inline int *maze_maze(maze_t *m) {
+  int size = maze_height(m) * maze_width(m);
+  int *data = malloc(sizeof(int) * size);
+  if (!data)
+    maze_throw(m, "Nelze alokovat paměť pro uložení bludiště!");
+
+  for (int i=0; i<size; i++)
+    data[i] = maze_raw_recv_int(m);
+
+  maze_raw_recv_flush(m);
+}
+
+static inline const char *maze_move(maze_t *m, char c) {
+  if (c == 0 || c == '\n')
+    maze_throw(m, "Tento pohyb neumím poslat.");
+
+  char buf[7];
+  strcpy(buf, "MOVE ");
+  buf[5] = c;
+  buf[6] = 0;
+  maze_cmd(m, buf);
+
+  const char *str = maze_raw_recv(m);
+  if (strncmp("NOPE ", str, 5))
+    return str+5;
+
+  maze_check_done(m);
+  return NULL;
+}
+
+/*
+ * Připojení a registrace error_handler-u.
+ * Vrátí objekt připojení k serveru, který se pak předává dalším obslužným funkcím.
+ * Error handler se může zavolat i z tohoto konstruktoru; v takovém případě dostane jako první argument NULL.
+ */
+maze_t *maze_new(const char *server, const char *port, const char *user, const char *level, void (*error_handler)(maze_t *m, const char *msg));
+
+/*
+ * Zavření připojení a úklid.
+ * Po návratu z maze_close() se stává pointer m invalidním.
+ */
+void maze_close(maze_t *m);
+
+/*
+ * Definice pro maze_loop a maze_run.
+ */
+#define MAZE_DONE	-1
+#define MAZE_KEEP	-2
+
+/*
+ * Callbacková smyčka pro maze_run.
+ */
+static inline maze_t *maze_loop(maze_t *m, char (*callback)(maze_t *m, const char *nope)) {
+  const char *nope = NULL;
+  for (int c; c = callback(m, nope); )
+    switch (c) {
+      case MAZE_DONE:
+	maze_close(m);
+	return NULL;
+      case MAZE_KEEP:
+	return m;
+      default:
+	nope = maze_move(m, c);
+    }
+
+  return m;
+}
+
+/*
+ * Připojení, registrace error handler-u a obslužného callbacku.
+ * Opakovaně volá callback; vstupem callbacku jsou:
+ ** objekt připojení
+ ** hláška NOPE; pokud přišlo DONE, předává se NULL
+ * výstup callbacku se posílá serveru jako příkaz MOVE.
+ * Pokud vrátí callback MAZE_DONE, cyklus skončí a připojení uzavře.
+ * Pokud vrátí callback MAZE_KEEP, cyklus skončí a vrátí nezavřený objekt připojení.
+ */
+static inline maze_t *maze_run(const char *server, const char *port, const char *user, const char *level, void (*error_handler)(maze_t *m, const char *msg), char (*callback)(maze_t *m, const char *nope)) {
+  maze_t *m = maze_new(server, port, user, level, error_handler);
+  return maze_loop(m, callback);
+}
+
+#endif
