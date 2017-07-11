@@ -52,7 +52,7 @@ Na libovolné porušení protokolu server reaguje zprávou OVER a ukončením
 spojení. Pokud chce klient skončit, prostě spojení ukončí sám. Pokud se klient
 dlouho neozve, server uzavře spojení bez varování.
 
-Jako pohybový příkaz server rozeznává (ze začátku) 'W', 'S', 'A', 'D'. Časem se
+Jako pohybový příkaz server rozeznává (ze začátku) 'w', 's', 'a', 'd'. Časem se
 bude měnit význam těchto příkazů a můžou přibýt další.
 
 Typický průběh:
