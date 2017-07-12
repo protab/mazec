@@ -638,7 +638,7 @@ int level_timer_arm(int fd, int milisec, bool repeat)
 
 int level_timer_disarm(int fd)
 {
-	return level_timer_disarm(fd);
+	return timer_disarm(fd);
 }
 
 int level_timer_del(int fd)
