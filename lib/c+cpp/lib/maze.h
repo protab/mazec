@@ -41,7 +41,7 @@ void maze_throw(maze_t *m, const char *msg);
  */
 static inline void maze_check_done(maze_t *m) {
   if (strcmp("DONE", maze_raw_recv(m)))
-    return maze_throw(m, "Očekávám DONE");
+    maze_throw(m, "Očekávám DONE");
 }
 
 /*
@@ -81,7 +81,7 @@ static inline int maze_cmd(maze_t *m, const char *cmd) {
 static inline void maze_user(maze_t *m, const char *user) {
   char buf[64];
   if (snprintf(buf, sizeof(buf), "USER %s", user) >= sizeof(buf))
-    return maze_throw(m, "Moc dlouhé jméno uživatele");
+    maze_throw(m, "Moc dlouhé jméno uživatele");
 
   maze_cmd(m, buf);
   maze_check_done(m);
@@ -93,7 +93,7 @@ static inline void maze_user(maze_t *m, const char *user) {
 static inline void maze_level(maze_t *m, const char *level) {
   char buf[64];
   if (snprintf(buf, sizeof(buf), "LEVL %s", level) >= sizeof(buf))
-    return maze_throw(m, "Moc dlouhé jméno levelu");
+    maze_throw(m, "Moc dlouhé jméno levelu");
 
   maze_cmd(m, buf);
   maze_check_done(m);

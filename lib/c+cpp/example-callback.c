@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef WIN32
+#pragma comment(lib, "lib\\Release\\libmaze.lib")
+#endif
+
 #define USER	"karel"
 #define LEVEL	"bagr"
 

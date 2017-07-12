@@ -27,7 +27,7 @@ void maze_default_error_handler(maze_t *m, const char *msg) {
 }
 
 void maze_throw(maze_t *m, const char *msg) {
-  void (*error_handler)(maze_t *m, const char *msg) = m->error_handler ?: maze_default_error_handler;
+  void (*error_handler)(maze_t *m, const char *msg) = m->error_handler ? m->error_handler : maze_default_error_handler;
   if (m->flags & MAZE_FLAG_CONSTRUCTOR) {
     free(m);
     error_handler(NULL, msg);
