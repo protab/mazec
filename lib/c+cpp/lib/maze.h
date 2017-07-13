@@ -27,6 +27,7 @@ const char *maze_raw_recv(maze_t *m);
  * Pomocné funkce pro čtení celého bludiště.
  * Nekombinovat s maze_raw_recv()!
  */
+void maze_raw_recv_start(maze_t *m);
 int maze_raw_recv_int(maze_t *m);
 void maze_raw_recv_flush(maze_t *m);
 
@@ -37,22 +38,26 @@ void maze_raw_recv_flush(maze_t *m);
 void maze_throw(maze_t *m, const char *msg);
 
 /*
- * Pomocná funkce pro zkontrolování, jestli přišlo DONE.
+ * Pomocné funkce pro zkontrolování, jestli přišlo DONE nebo DATA.
  */
 static inline void maze_check_done(maze_t *m) {
   if (strcmp("DONE", maze_raw_recv(m)))
     maze_throw(m, "Očekávám DONE");
 }
 
+static inline void maze_check_data(maze_t *m) {
+  if (strncmp("DATA ", maze_raw_recv(m), 5))
+    maze_throw(m, "Server neposlal DATA");
+}
 /*
  * Pomocná funkce pro přečtení řádku ve formátu "DATA <int>"
  */
 static inline int maze_get_int(maze_t *m) {
-  const char *str = maze_raw_recv(m);
-  if (strncmp("DATA ", str, 5))
-    maze_throw(m, "Server neposlal DATA");
+  maze_check_data(m);
+
   int num;
-  int res = sscanf(str+5, "%d", &num);
+  int res = sscanf(maze_raw_recv(m)+5, "%d", &num);
+
   if (res == 1)
     return num;
   if (res == 0)
@@ -60,6 +65,7 @@ static inline int maze_get_int(maze_t *m) {
   if (res == EOF)
     maze_throw(m, "Server neposlal nic");
 
+  maze_throw(m, "Tohle se nikdy nemá stát");
 }
 
 /*
@@ -122,7 +128,7 @@ static inline int maze_getw(maze_t *m) {
  */
 static inline int maze_width(maze_t *m) {
   int out = maze_getw_(m);
-  if (out >= 0)
+  if (out > 0)
     return out;
   else
     return maze_getw(m);
@@ -138,7 +144,7 @@ static inline int maze_geth(maze_t *m) {
  */
 static inline int maze_height(maze_t *m) {
   int out = maze_geth_(m);
-  if (out >= 0)
+  if (out > 0)
     return out;
   else
     return maze_geth(m);
@@ -181,10 +187,13 @@ static inline int *maze_maze(maze_t *m) {
   if (!data)
     maze_throw(m, "Nelze alokovat paměť pro uložení bludiště!");
 
+  maze_raw_send(m, "MAZE");
+  maze_raw_recv_start(m);
   for (int i=0; i<size; i++)
     data[i] = maze_raw_recv_int(m);
-
   maze_raw_recv_flush(m);
+
+  return data;
 }
 
 static inline const char *maze_move(maze_t *m, char c) {
@@ -198,7 +207,7 @@ static inline const char *maze_move(maze_t *m, char c) {
   maze_cmd(m, buf);
 
   const char *str = maze_raw_recv(m);
-  if (strncmp("NOPE ", str, 5))
+  if (!strncmp("NOPE ", str, 5))
     return str+5;
 
   maze_check_done(m);

@@ -8,6 +8,7 @@
 
 #define MAZE_FLAG_CONSTRUCTOR	1
 #define MAZE_FLAG_RECV_INT	2
+#define MAZE_FLAG_RECV_END	4
 #define BUFSIZE	256
 
 struct maze {
@@ -23,7 +24,7 @@ struct maze {
 
 void maze_default_error_handler(maze_t *m, const char *msg) {
   printf("Chyba: %s\n", msg);
-  exit(1);
+  abort();
 }
 
 void maze_throw(maze_t *m, const char *msg) {
@@ -34,7 +35,7 @@ void maze_throw(maze_t *m, const char *msg) {
   } else
     error_handler(m, msg);
 
-  exit(2);
+  abort();
 }
 
 #define CHECK(fun) do { const char *e = fun; if (e) maze_throw(m, e); } while (0)
@@ -85,6 +86,8 @@ void maze_raw_send(maze_t *m, const char *cmd) {
 }
 
 const char *maze_raw_recv(maze_t *m) {
+  if (m->flags & MAZE_FLAG_RECV_INT)
+    maze_throw(m, "Nelze míchat metody čtení");
   if (m->cmd_sent == m->cmd_recv)
     return m->buf;
 
@@ -117,9 +120,23 @@ const char *maze_raw_recv(maze_t *m) {
   return m->buf;
 }
 
+void maze_raw_recv_start(maze_t *m) {
+  m->end += maze_socket_read(m->sock, m->end, BUFSIZE - 1 - (m->end - m->buf));
+  *m->end = 0;
+
+  if (strncmp("DATA ", m->ptr, 5) != 0)
+    maze_throw(m, "Server neposlal DATA");
+
+  m->flags |= MAZE_FLAG_RECV_INT;
+  m->ptr += 5;
+}
+
 int maze_raw_recv_int(maze_t *m) {
-  if (m->cmd_sent == m->cmd_recv)
-    maze_throw(m, "Nemám data na vrácení");
+  if (!(m->flags & MAZE_FLAG_RECV_INT))
+    maze_throw(m, "Čtení jednotlivých čísel se musí inicializovat");
+
+  if (m->flags & MAZE_FLAG_RECV_END)
+    maze_throw(m, "Už nemám další data");
 
   for (int i=0; i<16; i++) { /* Limitovaný počet pokusů. */
     /* Mám v bufferu celé číslo, nebo je rozseknuté? */
@@ -150,28 +167,21 @@ int maze_raw_recv_int(maze_t *m) {
 
   /* Teď máme mezi m->ptr a m->end dostatek dat. */
 scan_num:
-  if (!(m->flags & MAZE_FLAG_RECV_INT)) {
-    if (strncmp("DATA ", m->ptr, 5) == 0) {
-      m->flags |= MAZE_FLAG_RECV_INT;
-      m->ptr += 5;
-      return maze_raw_recv_int(m);
-    }
-  }
   errno = 0;
   char *ep;
   int out = strtol(m->ptr, &ep, 10);
   if (errno)
     maze_throw(m, strerror(errno));
 
+  /* Kontrola syntaxe */
   if ((*ep == '\n') || (*ep == ' '))
     m->ptr = ep + 1;
   else
     maze_throw(m, "Za číslem není mezera ani konec řádku");
 
-  if (*ep == '\n') {
-    m->cmd_recv++;
-    m->flags &= ~MAZE_FLAG_RECV_INT;
-  }
+  /* Konec dat */
+  if (*ep == '\n')
+    m->flags |= MAZE_FLAG_RECV_END;
 
   return out;
 }
@@ -180,13 +190,18 @@ void maze_raw_recv_flush(maze_t *m) {
   if (m->cmd_sent == m->cmd_recv)
     maze_throw(m, "Nemám co uklízet");
 
+  if (m->flags & MAZE_FLAG_RECV_END) {
+clean:
+    m->flags &= ~(MAZE_FLAG_RECV_INT | MAZE_FLAG_RECV_END);
+    m->cmd_recv++;
+    return;
+  }
+
   while (1) {
     for (char *ws = m->ptr; ws < m->end; ws++)
       if (*ws == '\n') {
 	m->ptr = ws+1;
-	m->flags &= ~MAZE_FLAG_RECV_INT;
-	m->cmd_recv++;
-	return;
+	goto clean;
       }
 
     m->end = m->buf + maze_socket_read(m->sock, m->buf, BUFSIZE - 1);

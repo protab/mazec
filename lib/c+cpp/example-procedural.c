@@ -24,14 +24,14 @@ int main(void) {
   free(level_data);
 
   // Počkáme, než nás odklikne frontend.
-  maze_wait(m);
+//  maze_wait(m);
 
   // Pošleme pohyb.
-  const char *msg = maze_move(m, 'W');
+  const char *msg = maze_move(m, 'w');
   if (msg) {
-    printf("Pohyb odmítnut: %s\n", msg);
+    printf("Pohyb w odmítnut: %s\n", msg);
   } else {
-    printf("Pohyb W proveden v pořádku.\n");
+    printf("Pohyb w proveden v pořádku.\n");
   }
 
   // Ukončíme spojení.
