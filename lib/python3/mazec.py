@@ -2,7 +2,7 @@ import socket
 import types
 from typing import List
 
-SERVER_DOMAIN = 'localhost'
+SERVER_DOMAIN = 'protab.'
 SERVER_PORT = 1234
 
 class LineRPCConnection(object):
@@ -62,13 +62,13 @@ class Mazec(object):
     """
 
     """Nahoru"""
-    UP = 'W'
+    UP = 'w'
     """Dolu"""
-    DOWN = 'S'
+    DOWN = 's'
     """Doleva"""
-    LEFT = 'A'
+    LEFT = 'a'
     """Doprava"""
-    RIGHT = 'D'
+    RIGHT = 'd'
 
     def __init__(self, username: str, level: str, use_wait=True):
         self._connection = LineRPCConnection()
