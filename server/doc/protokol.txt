@@ -45,15 +45,15 @@ MAZE			Vrať barvy všech políček (->DATA). Políčka jsou
 			řádcích počínaje levým horním rohem. Pro
 			interpretaci je tedy potřeba se zeptat na šířku
 			a výšku.
-MOVE <char>		Pohybový (zatím) příkaz (->DONE nebo NOPE, pokud pohyb
-			nelze provést, OVER pokud dojde k vítězství/prohře)
+MOVE <char>		Pohybový příkaz. <char> je jeden znak. (->DONE nebo
+			NOPE, pokud pohyb nelze provést, OVER pokud dojde
+			k vítězství/prohře)
 
 Na libovolné porušení protokolu server reaguje zprávou OVER a ukončením
-spojení. Pokud chce klient skončit, prostě spojení ukončí sám. Pokud se klient
-dlouho neozve, server uzavře spojení bez varování.
+spojení. Pokud chce klient skončit, prostě spojení ukončí sám.
 
-Jako pohybový příkaz server rozeznává (ze začátku) 'w', 's', 'a', 'd'. Časem se
-bude měnit význam těchto příkazů a můžou přibýt další.
+Jako pohybový příkaz server typicky rozeznává, 'w', 's', 'a', 'd', ale
+záleží na konkrétní úloze.
 
 Typický průběh:
 
@@ -73,9 +73,9 @@ Typický průběh:
 				DATA 0
 	GETY
 				DATA 0
-	MOVE D
+	MOVE d
 				DONE
-	MOVE S
+	MOVE s
 				OVER Vyborne! Dalsi vyzvou je "matfyz".
 
 Server měří čas od připojení se k úloze (tj. od příkazu LEVL).
