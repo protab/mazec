@@ -8,3 +8,4 @@ pylevels/Makefile
 pylevels/__pycache__
 tags
 users
+.vscode/
