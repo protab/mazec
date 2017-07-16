@@ -1,6 +1,4 @@
 var DEBUG = false;
-var BASE_URL = 'ws://localhost:1234/vasek';
-//var BASE_URL = '$BASE_URL'
 
 /**
  *  Tyto hodnoty pod stejnými názvy:
@@ -12,10 +10,6 @@ var BASE_URL = 'ws://localhost:1234/vasek';
 var globalState = {
     'connectionAttempts': 0
 };
-
-function getURL() {
-    return document.getElementById('BASE_URL').innerHTML;
-}
 
 /**************************** RENDERING ***************************************/
 
@@ -126,7 +120,7 @@ function setConnectionStatusMsg(msg) {
 }
 
 function init() {
-    var socket = new WebSocket(getURL());
+    var socket = new WebSocket(url);
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function() {
