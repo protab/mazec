@@ -92,12 +92,6 @@ function render(map) {
         context.translate(-x, -y);
     }
 }
-window.addEventListener('load', render)
-
-function rerender() {
-    var map = globalState['map'];
-    render(map);
-}
 
 function loadSprites(bank) {
     var bankStr = ('0' + bank.toString());
