@@ -58,7 +58,10 @@ class Connect:
 
         response = b''
         while not response or response[-1] != ord(b'\n'):
-            response += self.sock.recv(65536)
+            data = self.sock.recv(65536)
+            if len(data) == 0:
+                raise MazeException('Server uzavřel spojení.')
+            response += data
         response = response.decode().rstrip()
 
         if response == 'DONE':
