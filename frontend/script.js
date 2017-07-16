@@ -8,7 +8,8 @@ var DEBUG = false;
  *      images
  */
 var globalState = {
-    'connectionAttempts': 0
+    'connectionAttempts': 0,
+    'images': {}
 };
 
 /**************************** RENDERING ***************************************/
@@ -106,12 +107,6 @@ function loadSprites(bank) {
         globalState.images[bankStr][i] = img;
     }
 }
-
-function initSprites() {
-    globalState.images = {};
-    loadSprites(0);
-}
-window.addEventListener('load', initSprites)
 
 /*************************** CONNECTION MANAGEMENT ****************************/
 
