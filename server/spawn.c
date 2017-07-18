@@ -14,9 +14,9 @@
 
 static char *prg_path;
 
-void spawn_init(int __unused argc, char **argv)
+void spawn_init(char *argv0)
 {
-	prg_path = sstrdup(argv[0]);
+	prg_path = sstrdup(argv0);
 }
 
 int spawn(const char *login)
