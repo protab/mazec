@@ -48,15 +48,15 @@ class LineRPCConnection(object):
         while not data or data[-1] != 0x0A:
             ndata = self.socket.recv(buffsize)
             if len(ndata) == 0:
-                raise MazecException('Server uzavrel spojeni.')
+                raise MazeException('Server uzavrel spojeni.')
             data += ndata
         return data.decode('ascii')[:-1]
 
 
-class MazecException(Exception):
+class MazeException(Exception):
     pass
 
-class Mazec(object):
+class Maze(object):
     """
     Sprava a ovladani hry
     """
@@ -120,10 +120,10 @@ class Mazec(object):
             return
         elif resp.startswith('OVER '):
             # server ukoncuje spojeni
-            raise MazecException(resp[len('OVER '):])
+            raise MazeException(resp[len('OVER '):])
         else:
             # nedefinovana odpoved, ukoncujeme spojeni
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+            raise MazeException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def _command(self, cmd) -> str:
         """ Posle serveru libovolny textovy prikaz, vrati textovou odpoved serveru"""
@@ -164,7 +164,7 @@ class Mazec(object):
             width = int(resp[len('DATA '):])
             return width
         else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+            raise MazeException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def _get_height(self) -> int:
         """
@@ -176,7 +176,7 @@ class Mazec(object):
             height = int(resp[len('DATA '):])
             return height
         else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+            raise MazeException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def _get_list_of_all_values(self) -> List[int]:
         resp = self._command('MAZE')
@@ -184,7 +184,7 @@ class Mazec(object):
             maze = [int(x) for x in resp[len('DATA '):].split(' ')]
             return maze
         else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+            raise MazeException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def _move_command(self, direction) -> str:
         """
@@ -199,7 +199,7 @@ class Mazec(object):
         elif resp.startswith('NOPE '):
             return resp[len('NOPE '):]
         else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+            raise MazeException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def get_x(self) -> int:
         """
@@ -211,7 +211,7 @@ class Mazec(object):
             x = int(resp[len('DATA '):])
             return x
         else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+            raise MazeException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def get_y(self) -> int:
         """
@@ -223,7 +223,7 @@ class Mazec(object):
             y = int(resp[len('DATA '):])
             return y
         else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+            raise MazeException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def get_value(self, x: int, y: int) -> int:
         """
@@ -235,7 +235,7 @@ class Mazec(object):
             value = int(resp[len('DATA '):])
             return value
         else:
-            raise MazecException('Neocekavana odpoved serveru: {}'.format(resp))
+            raise MazeException('Neocekavana odpoved serveru: {}'.format(resp))
 
     def get_all_values(self) -> List[List[int]]:
         """
@@ -255,10 +255,10 @@ class Mazec(object):
         """
         Pohybová metoda, přijímá hodnoty:
 
-        Mazec.UP
-        Mazec.DOWN
-        Mazec.LEFT
-        Mazec.RIGHT
+        Maze.UP
+        Maze.DOWN
+        Maze.LEFT
+        Maze.RIGHT
 
         Návratovou hodnotou je `True` v případě úspěchu, `False` v případě neúspěchu.
         Případné chybové hlášky se ukládají do proměnné `error`.
@@ -279,6 +279,6 @@ class Mazec(object):
         """
 
         success = True
-        with Mazec(username, level, use_wait=use_wait) as m:
+        with Maze(username, level, use_wait=use_wait) as m:
             while True:
                 success = m.move(loop(m, success, m.error))

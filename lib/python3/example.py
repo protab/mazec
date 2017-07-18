@@ -1,8 +1,8 @@
-from mazec import Mazec
+from maze import Maze
 
 """Priklad pouziti vlastniho cyklu a with"""
 
-with Mazec('jmeno', 'level') as m:
+with Maze('jmeno', 'level') as m:
     m.height   # vyska levelu
     m.width    # sirka levelu
 
@@ -13,14 +13,14 @@ with Mazec('jmeno', 'level') as m:
     maze = m.get_all_values()   # hodnoty vsech policek
     maze[5][10]                 # hodnota pole na souradnicich x=5, y=10
 
-    success = m.move(Mazec.UP)  # pokus o pohyb, vraci uspech nebo neuspech
+    success = m.move(Maze.UP)  # pokus o pohyb, vraci uspech nebo neuspech
     if not success:
         print(m.error)          # v pripade neuspechu je toto chybova hlaska
 
 
 """ Priklad pouziti vlastniho cyklu bez with """
 
-m = Mazec("username", "level")      # Otevře spojení se serverem
+m = Maze("username", "level")      # Otevře spojení se serverem
 m.height
 m.get_y()
 m.close()                           # Uzavře spojení se serverem
@@ -32,12 +32,12 @@ Priklad pouziti s pohybovym cyklem.
 V tomto případě je každým krokem hry posun nahoru.
 """
 
-def main(m: Mazec, success: bool, error: str):
-    return Mazec.UP
+def main(m: Maze, success: bool, error: str):
+    return Maze.UP
 
-Mazec.run('jmeno', 'level', main)
+Maze.run('jmeno', 'level', main)
 
 
 """ Pokud nechcete mackat tlacitko "Spustit" na vykreslovatku, pridejte use_wait = False """
-m = Mazec('jmeno', 'level', use_wait=False)
-Mazec.run('jmeno', 'level', funkce, use_wait=False)
+m = Maze('jmeno', 'level', use_wait=False)
+Maze.run('jmeno', 'level', funkce, use_wait=False)
