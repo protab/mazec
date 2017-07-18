@@ -8,7 +8,7 @@
 
 void emerg_exit(const char *path, int line, int code)
 {
-	log_err("fatal error %d at %s:%d", -code, path, line);
+	log_err("fatal error at %s:%d: %s (%d)", path, line, strerror(-code), -code);
 	exit(1);
 }
 
