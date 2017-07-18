@@ -1,5 +1,6 @@
-DB_PATH		"./users"
-LEVELS_DIR	"./levels/"
-PYLEVELS_DIR	"./pylevels/"
-PLUMBING	"./tools/answer.sh"
+PATH_PREFIX	"./"
+DB_PATH		PATH_PREFIX "users"
+LEVELS_DIR	PATH_PREFIX "levels/"
+PYLEVELS_DIR	PATH_PREFIX "pylevels/"
+PLUMBING	PATH_PREFIX "tools/answer.sh"
 LOGIN_LEN	30
