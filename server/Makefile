@@ -1,5 +1,6 @@
 CFLAGS = -W -Wall -Wno-unused-result -g -std=gnu99 -D_GNU_SOURCE
 LDFLAGS = -rdynamic -ldl
+DESTDIR ?= /opt/mazec
 
 OBJS = app.o common.o base64.o db.o draw.o event.o ipc.o log.o main.o proto.o \
        pybindings.o sha1.o socket.o spawn.o time.o websocket_data.o websocket_http.o
@@ -38,6 +39,19 @@ levels/Makefile:
 pylevels/Makefile:
 	cd pylevels && ../scripts/build_pymakefile
 .PHONY: pylevels/Makefile
+
+levels_install: build_levels build_pylevels
+	install -d $(DESTDIR)/levels $(DESTDIR)/pylevels $(DESTDIR)/resources
+	install levels/*.so $(DESTDIR)/levels
+	install -m 644 pylevels/*.py $(DESTDIR)/pylevels
+	cp -P pylevels/code_* $(DESTDIR)/pylevels
+	install -m 644 resources/* $(DESTDIR)/resources
+
+mazec_install: mazec
+	install -d $(DESTDIR)
+	install mazec $(DESTDIR)
+
+install: mazec_install levels_install
 
 clean:
 	rm -f $(OBJS) mazec levels/*.o levels/*.so levels/Makefile pylevels/code_* pylevels/Makefile
