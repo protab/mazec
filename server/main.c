@@ -20,12 +20,22 @@
 
 static void init_master(char *argv0, bool use_syslog)
 {
+	int port, res;
+
 	log_init("<mazec>", use_syslog);
 	check(event_init());
 	spawn_init(argv0, use_syslog);
 	check(db_init());
-	check(proto_server_init(APP_PORT));
-	check(websocket_http_init(WEBSOCKET_PORT));
+	port = APP_PORT;
+	res = proto_server_init(port);
+	if (!res) {
+		port = WEBSOCKET_PORT;
+		res = websocket_http_init(port);
+	}
+	if (res < 0) {
+		log_err("cannot listen on port %d: %s (%d)", port, strerror(-res), -res);
+		exit(1);
+	}
 }
 
 static void init_child(char *login, bool use_syslog)
