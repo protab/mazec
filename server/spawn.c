@@ -13,10 +13,12 @@
 #include "log.h"
 
 static char *prg_path;
+static bool use_syslog;
 
-void spawn_init(char *argv0)
+void spawn_init(char *argv0, bool use_syslog_)
 {
 	prg_path = sstrdup(argv0);
+	use_syslog = use_syslog_;
 }
 
 int spawn(const char *login)
@@ -42,7 +44,10 @@ int spawn(const char *login)
 	if (dup2(fd[1], 2) < 0)
 		exit(10);
 	close(fd[1]);
-	execlp(prg_path, prg_path, login, NULL);
+	if (use_syslog)
+		execlp(prg_path, prg_path, "-s", login, NULL);
+	else
+		execlp(prg_path, prg_path, login, NULL);
 	exit(11);
 
 error: ;
