@@ -50,6 +50,7 @@ levels_install: build_levels build_pylevels
 mazec_install: mazec
 	install -d $(DESTDIR)
 	install mazec $(DESTDIR)
+	install -m 644 mazec.service /etc/systemd/system
 
 install: mazec_install levels_install
 
