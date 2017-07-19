@@ -14,10 +14,10 @@
 struct maze {
   struct maze_socket *sock;
   void (*error_handler)(maze_t *m, const char *msg);
-  int cmd_sent;
-  int cmd_recv;
-  unsigned int flags;
-  int height, width;
+  unsigned cmd_sent;
+  unsigned cmd_recv;
+  unsigned flags;
+  unsigned height, width;
   char *ptr, *end;
   char buf[256];
 };
@@ -76,11 +76,14 @@ void maze_raw_send(maze_t *m, const char *cmd) {
   if (m->cmd_sent > m->cmd_recv)
     maze_throw(m, "Nepřečetl sis výstup předchozího příkazu");
 
-  int wb = strlen(cmd), wa = 0;
+  int len = strlen(cmd);
+  char buf[64];
+  memcpy(buf, cmd, len);
+  buf[len] = '\n';
+  buf[len+1] = '\0';
+  int wb = len+1, wa = 0;
   while (wa < wb)
-    wa += maze_socket_write(m->sock, cmd + wa, wb - wa);
-
-  while (maze_socket_write(m->sock, "\n", 1) < 1);
+    wa += maze_socket_write(m->sock, buf + wa, wb - wa);
 
   m->cmd_sent++;
 }
