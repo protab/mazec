@@ -184,12 +184,12 @@ clean:
  * Pomocné funkce pro zkontrolování, jestli přišlo DONE nebo DATA.
  */
 static void maze_check_done(maze_t *m) {
-  if (strcmp("DONE", maze_raw_recv(m)))
+  if (strcmp("DONE", m->buf))
     maze_throw(m, "Očekávám DONE");
 }
 
 static void maze_check_data(maze_t *m) {
-  if (strncmp("DATA ", maze_raw_recv(m), 5))
+  if (strncmp("DATA ", m->buf, 5))
     maze_throw(m, "Server neposlal DATA");
 }
 
@@ -200,7 +200,7 @@ static int maze_get_int(maze_t *m) {
   maze_check_data(m);
 
   int num;
-  int res = sscanf(maze_raw_recv(m)+5, "%d", &num);
+  int res = sscanf(m->buf+5, "%d", &num);
 
   if (res == 1)
     return num;
@@ -217,10 +217,10 @@ static int maze_get_int(maze_t *m) {
  */
 int maze_cmd(maze_t *m, const char *cmd) {
   maze_raw_send(m, cmd);
+  maze_raw_recv(m);
 
-  const char *response = maze_raw_recv(m);
-  if (strncmp("OVER ", response, 5) == 0)
-    maze_throw(m, response + 5);
+  if (strncmp("OVER ", m->buf, 5) == 0)
+    maze_throw(m, m->buf + 5);
 
   return 0;
 }
@@ -314,9 +314,8 @@ const char *maze_move(maze_t *m, char c) {
   buf[6] = 0;
   maze_cmd(m, buf);
 
-  const char *str = maze_raw_recv(m);
-  if (!strncmp("NOPE ", str, 5))
-    return str+5;
+  if (!strncmp("NOPE ", m->buf, 5))
+    return m->buf+5;
 
   maze_check_done(m);
   return NULL;
