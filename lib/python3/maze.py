@@ -50,7 +50,7 @@ class LineRPCConnection(object):
             if len(ndata) == 0:
                 raise MazeException('Server uzavrel spojeni.')
             data += ndata
-        return data.decode('ascii')[:-1]
+        return data.decode()[:-1]
 
 
 class MazeException(Exception):
