@@ -41,37 +41,6 @@ void maze_throw(maze_t *m, const char *msg) {
 #define CHECK(fun) do { const char *e = fun; if (e) maze_throw(m, e); } while (0)
 
 
-maze_t *maze_new(const char *server, const char *port, const char *user, const char *level, void (*error_handler)(maze_t *m, const char *msg)) {
-  maze_t *m = malloc(sizeof(struct maze));
-  if (!m)
-    if (error_handler)
-      error_handler(NULL, "Nelze alokovat paměť");
-    else {
-      printf("Chyba: Nelze alokovat paměť\n");
-      exit(1);
-    }
-
-  memset(m, 0, sizeof(struct maze));
-  m->ptr = m->end = m->buf;
-  
-  m->flags |= MAZE_FLAG_CONSTRUCTOR;
-
-  m->error_handler = error_handler;
-  m->sock = maze_socket_open(m, server, port);
-
-  maze_user(m, user);
-  maze_level(m, level);
-
-  m->flags &= ~MAZE_FLAG_CONSTRUCTOR;
-
-  return m;
-}
-
-void maze_close(maze_t *m) {
-  maze_socket_close(m->sock);
-  free(m);
-}
-
 void maze_raw_send(maze_t *m, const char *cmd) {
   if (m->cmd_sent > m->cmd_recv)
     maze_throw(m, "Nepřečetl sis výstup předchozího příkazu");
@@ -211,18 +180,176 @@ clean:
   }
 }
 
-int maze_setw_(maze_t *m, int w) {
-  return m->width = w;
+/*
+ * Pomocné funkce pro zkontrolování, jestli přišlo DONE nebo DATA.
+ */
+static void maze_check_done(maze_t *m) {
+  if (strcmp("DONE", maze_raw_recv(m)))
+    maze_throw(m, "Očekávám DONE");
 }
 
-int maze_getw_(maze_t *m) {
+static void maze_check_data(maze_t *m) {
+  if (strncmp("DATA ", maze_raw_recv(m), 5))
+    maze_throw(m, "Server neposlal DATA");
+}
+
+/*
+ * Pomocná funkce pro přečtení řádku ve formátu "DATA <int>"
+ */
+static int maze_get_int(maze_t *m) {
+  maze_check_data(m);
+
+  int num;
+  int res = sscanf(maze_raw_recv(m)+5, "%d", &num);
+
+  if (res == 1)
+    return num;
+  if (res == 0)
+    maze_throw(m, "Server neposlal číslo");
+  if (res == EOF)
+    maze_throw(m, "Server neposlal nic");
+
+  maze_throw(m, "Tohle se nikdy nemá stát");
+}
+
+/*
+ * Pošli libovolný příkaz, při chybě zavolej error_handler
+ */
+int maze_cmd(maze_t *m, const char *cmd) {
+  maze_raw_send(m, cmd);
+
+  const char *response = maze_raw_recv(m);
+  if (strncmp("OVER ", response, 5) == 0)
+    maze_throw(m, response + 5);
+
+  return 0;
+}
+
+/*
+ * Nastavuje uživatele. Normálně se tohle volá z maze_new() nebo maze_run().
+ */
+static void maze_user(maze_t *m, const char *user) {
+  char buf[64];
+  if (snprintf(buf, sizeof(buf), "USER %s", user) >= sizeof(buf))
+    maze_throw(m, "Moc dlouhé jméno uživatele");
+
+  maze_cmd(m, buf);
+  maze_check_done(m);
+}
+
+/*
+ * Nastavuje level. Normálně se tohle volá z maze_new() nebo maze_run().
+ */
+static void maze_level(maze_t *m, const char *level) {
+  char buf[64];
+  if (snprintf(buf, sizeof(buf), "LEVL %s", level) >= sizeof(buf))
+    maze_throw(m, "Moc dlouhé jméno levelu");
+
+  maze_cmd(m, buf);
+  maze_check_done(m);
+}
+
+void maze_wait(maze_t *m) {
+  maze_cmd(m, "WAIT");
+  maze_check_done(m);
+}
+
+int maze_width(maze_t *m) {
+  if (m->width > 0)
+    return m->width;
+
+  maze_cmd(m, "GETW");
+  m->width = maze_get_int(m);
   return m->width;
 }
 
-int maze_seth_(maze_t *m, int h) {
-  return m->height = h;
-}
+int maze_height(maze_t *m) {
+  if (m->height > 0)
+    return m->height;
 
-int maze_geth_(maze_t *m) {
+  maze_cmd(m, "GETH");
+  m->height = maze_get_int(m);
   return m->height;
 }
+
+int maze_x(maze_t *m) {
+  maze_cmd(m, "GETX");
+  return maze_get_int(m);
+}
+
+int maze_y(maze_t *m) {
+  maze_cmd(m, "GETY");
+  return maze_get_int(m);
+}
+
+int maze_what(maze_t *m, int x, int y) {
+  char buf[64];
+  sprintf(buf, "WHAT %d %d", x, y);
+  maze_cmd(m, buf);
+  return maze_get_int(m);
+}
+
+int *maze_maze(maze_t *m) {
+  int size = maze_height(m) * maze_width(m);
+  int *data = malloc(sizeof(int) * size);
+  if (!data)
+    maze_throw(m, "Nelze alokovat paměť pro uložení bludiště!");
+
+  maze_raw_send(m, "MAZE");
+  maze_raw_recv_start(m);
+  for (int i=0; i<size; i++)
+    data[i] = maze_raw_recv_int(m);
+  maze_raw_recv_flush(m);
+
+  return data;
+}
+
+const char *maze_move(maze_t *m, char c) {
+  if (c == 0 || c == '\n')
+    maze_throw(m, "Tento pohyb neumím poslat.");
+
+  char buf[7];
+  strcpy(buf, "MOVE ");
+  buf[5] = c;
+  buf[6] = 0;
+  maze_cmd(m, buf);
+
+  const char *str = maze_raw_recv(m);
+  if (!strncmp("NOPE ", str, 5))
+    return str+5;
+
+  maze_check_done(m);
+  return NULL;
+}
+
+maze_t *maze_new(const char *server, const char *port, const char *user, const char *level, void (*error_handler)(maze_t *m, const char *msg)) {
+  maze_t *m = malloc(sizeof(struct maze));
+  if (!m)
+    if (error_handler)
+      error_handler(NULL, "Nelze alokovat paměť");
+    else {
+      printf("Chyba: Nelze alokovat paměť\n");
+      exit(1);
+    }
+
+  memset(m, 0, sizeof(struct maze));
+  m->ptr = m->end = m->buf;
+  
+  m->flags |= MAZE_FLAG_CONSTRUCTOR;
+
+  m->error_handler = error_handler;
+  m->sock = maze_socket_open(m, server, port);
+
+  maze_user(m, user);
+  maze_level(m, level);
+
+  m->flags &= ~MAZE_FLAG_CONSTRUCTOR;
+
+  return m;
+}
+
+void maze_close(maze_t *m) {
+  maze_socket_close(m->sock);
+  free(m);
+}
+
