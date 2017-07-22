@@ -119,9 +119,9 @@ namespace Mazec.Client
         public void ForAll(Action<(int x, int y), int> callback)
         {
             int i = 0;
-            for (int x = 0; x < Width; x++, i++)
-                for(int y = 0; y < Height; y++, i++)
-                    callback((x, y), Data[i]);
+            for(int y = 0; y < Height; y++)
+                for (int x = 0; x < Width; x++)
+                    callback((x, y), Data[i++]);
         }
     }
 }
