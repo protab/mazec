@@ -3,7 +3,7 @@ import types
 from typing import List
 
 SERVER_DOMAIN = 'protab.'
-SERVER_PORT = 1234
+SERVER_PORT = 4000
 
 class LineRPCConnection(object):
     """

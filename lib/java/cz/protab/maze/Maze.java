@@ -28,7 +28,7 @@ public class Maze implements MazeMap, AutoCloseable {
      */
     private static final Logger logger = Logger.getLogger("Maze");
 
-    private static final String serverHostname = "localhost";
+    private static final String serverHostname = "protab.";
     private static final int serverPort = 4000;
 
     private final Socket socket;

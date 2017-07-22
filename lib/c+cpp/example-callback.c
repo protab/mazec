@@ -9,7 +9,7 @@
 #define USER	"karel"
 #define LEVEL	"bagr"
 
-#define MAZE_SERVER_NAME	"localhost"
+#define MAZE_SERVER_NAME	"protab."
 #define MAZE_SERVER_PORT	"4000"
 
 // Jdi stále vzhůru.
