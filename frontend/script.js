@@ -29,7 +29,12 @@ function handleButtonsAndClock(header) {
 }
 
 function render(map) {
-    globalState['map'] = map;
+    if (map == null) {
+        map = globalState['map']
+    } else {
+        globalState['map'] = map;
+    }
+
     var bankStr = globalState['bank'];
 
     var canvas = document.getElementById('canvas');
@@ -106,6 +111,8 @@ function loadSprites(bank) {
         img.src = 'img/' + bankStr + '/' + id + '.png';
         globalState.images[bankStr][i] = img;
     }
+
+    setTimeout(render, 500);
 }
 
 /*************************** CONNECTION MANAGEMENT ****************************/
@@ -217,6 +224,7 @@ function init() {
         console.log('Connection closed...');
         setConnectionStatusMsg('Nepřipojeno');
         reloadConnectionButtonText();
+        globalState['map'] = null;
         render(null);
         setTimeout(reconnect, 200);
     };
