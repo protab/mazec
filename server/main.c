@@ -2,8 +2,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "app.h"
 #include "common.h"
+#include "config.h"
 #include "db.h"
 #include "draw.h"
 #include "event.h"
@@ -48,6 +50,13 @@ static void init_child(char *login, bool use_syslog)
 	draw_init();
 }
 
+static void set_workdir(void)
+{
+	if (!strcmp(INSTALL_DIR, ""))
+		return;
+	check(chdir(INSTALL_DIR));
+}
+
 void help(char *argv0)
 {
 	printf(
@@ -85,6 +94,8 @@ int main(int argc, char **argv)
 			return 1;
 		}
 	}
+
+	set_workdir();
 
 	if (opt_interactive) {
 		log_init("<python>", opt_syslog);
