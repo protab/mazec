@@ -27,7 +27,7 @@ public class PreparsedMazeMap implements MazeMap {
         map = new int[height][width];
         for (int row = 0; row < height; ++row)
             for (int col = 0; col < width; ++col)
-                map[col][row] = scanner.nextInt();
+                map[row][col] = scanner.nextInt();
     }
 
     @Override
