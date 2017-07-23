@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 
-namespace Mazec.Client
+namespace Maze.Client
 {
     public class MazeClient
     {
