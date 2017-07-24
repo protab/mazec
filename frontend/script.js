@@ -109,10 +109,15 @@ function loadSprites(bank) {
         id = id.substr(id.length - 2);
         // img.src = 'http://protab./static/img/2017/' + bankStr + '/' + id + '.png';
         img.src = 'img/' + bankStr + '/' + id + '.png';
+        var counter = 0;
+        img.onload = img.onerror = function() {
+            counter++;
+            if (counter == 32) {
+                render(null);
+            }
+        }
         globalState.images[bankStr][i] = img;
     }
-
-    setTimeout(render, 500);
 }
 
 /*************************** CONNECTION MANAGEMENT ****************************/
