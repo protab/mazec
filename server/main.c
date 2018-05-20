@@ -75,6 +75,7 @@ int main(int argc, char **argv)
 		{ "interactive", no_argument, NULL, 'i' },
 		{ "syslog", no_argument, NULL, 's' },
 		{ "help", no_argument, NULL, 'h' },
+		{ 0 }
 	};
 	int opt;
 	bool opt_interactive = false, opt_syslog = false;
