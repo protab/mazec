@@ -1,0 +1,83 @@
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+  font-family: monospace;
+}
+
+.container {
+  margin-top: 4.6vmin;
+  height: 90vmin;
+  width: 90vmin;
+  border: 0.4vmin solid black;
+}
+
+.clock { /* 5 */
+  font-family: monospace;
+  font-size: 3vmin;
+  margin-top: 1vmin;
+  margin-bottom: 1vmin;
+  color: black;
+}
+
+#canvas {
+  width: 68.2vmin;
+  height: 68.2vmin;
+  border: 0.4vmin solid black;
+  /*background: black;*/
+
+  image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
+  image-rendering: -moz-crisp-edges;          /* Firefox                        */
+  image-rendering: -o-crisp-edges;            /* Opera                          */
+  image-rendering: -webkit-optimize-contrast; /* Chrome (and eventually Safari) */
+  image-rendering: pixelated; /* Chrome */
+  image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
+  -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
+}
+
+.center {
+  display: block;
+  text-align: center;
+  position: relative;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.gbutton { /* 5.8 */
+  width: 69vmin;
+  height: 4vmin;
+  font-size: 3vmin;
+  font-family: monospace;
+  color: black;
+  margin-top: 1vmin;
+  background: lightgray;
+  border: 0.4vmin solid black;
+}
+
+#button_end #button_start #clock {
+  visibility: hidden;
+}
+
+footer { /* 6.4 */
+  margin-top: 1vmin;
+  border-top: 0.4vmin solid black;
+  padding-top: 0.5vmin;
+  height: 3vmin;
+  font-size: 1.5vmin;
+  width: 90vmin;
+
+}
+
+footer > button {
+  height: 3vmin;
+  border: 0.2vmin solid black;
+  font-size: 1.5vmin;
+  font-family: monospace;
+  background: lightgray;
+}
+
+#connection_button {
+  margin-right: 10px;
+}
+
