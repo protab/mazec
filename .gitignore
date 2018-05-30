@@ -10,3 +10,5 @@ server/tags
 server/users
 server/.vscode/
 frontend/build
+lib/*/__pycache__/
+lib/.vscode/
