@@ -2,8 +2,8 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>Protab</title>
-        <meta name="description" content="Kreslitko na hru">
+        <title>Mazec Frontend</title>
+        <meta name="description" content="Mazec frontend example">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <link rel="stylesheet" href="style.css"/>
@@ -18,13 +18,13 @@
         <![endif]-->
         <div class="container center">
             <div class="center clock" id="clock">
-                Zbývá <span id="time_left">0</span> s
+                Time left: <span id="time_left">0</span> s
             </div>
             <div class="center canvas-container">
                 <canvas id="canvas" width="495" height="495"></canvas>
             </div>
-            <button class="center gbutton" id="button_start" onclick="buttonPress(1)">Spustit</button>
-            <button class="center gbutton" id="button_end" onclick="buttonPress(2)">Ukončit</button>
+            <button class="center gbutton" id="button_start" onclick="buttonPress(1)">Run</button>
+            <button class="center gbutton" id="button_end" onclick="buttonPress(2)">Terminate</button>
             <footer>
                 <span id="connection_status_msg"></span>
                 <button id='connection_control' onclick='onConnectionButtonClick()'></button>

@@ -1,12 +1,5 @@
 var DEBUG = false;
 
-/**
- *  Tyto hodnoty pod stejnými názvy:
- *      username
- *      socket
- *      map
- *      images
- */
 var globalState = {
     'connectionAttempts': 0,
     'images': {}
@@ -132,19 +125,19 @@ function init() {
 
     socket.onopen = function() {
         console.log('Connection opened...');
-        setConnectionStatusMsg('Spojení navázáno...')
+        setConnectionStatusMsg('Connected...')
         globalState.connectionAttempts = 0;
         render(null);
     };
 
     socket.onmessage = function(event){
         if (!event.data instanceof ArrayBuffer) {
-            console.error('Prijata data nejsou typu ArrayBuffer');
+            console.error('Received data is not of ArrayBuffer type');
             return;
         }
 
         if(DEBUG) {
-            console.log('Prijata data:')
+            console.log('Received data:')
             console.log(event.data);
         }
 
@@ -227,7 +220,7 @@ function init() {
     };
     socket.onclose = function(event) {
         console.log('Connection closed...');
-        setConnectionStatusMsg('Nepřipojeno');
+        setConnectionStatusMsg('Not connected');
         reloadConnectionButtonText();
         globalState['map'] = null;
         render(null);
@@ -236,7 +229,7 @@ function init() {
 
     globalState['socket'] = socket;
 
-    setConnectionStatusMsg('Navazování spojení...')
+    setConnectionStatusMsg('Connecting...')
     reloadConnectionButtonText();
 }
 
@@ -271,9 +264,9 @@ function closeConnection() {
 function reloadConnectionButtonText() {
     var button = document.getElementById('connection_control');
     if (isConnectionClosed()) {
-        button.innerHTML = 'Připojit'
+        button.innerHTML = 'Connect'
     } else {
-        button.innerHTML = 'Ukončit'
+        button.innerHTML = 'Disconnect'
     }
 }
 

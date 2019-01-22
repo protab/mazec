@@ -1,6 +1,6 @@
 #!/usr/bin/bash
-# Tento skript spoji dohromady cely frontend do jednoho HTML,
-# aby nebylo nutne delat vice requestu na server.
+# This merges the frontend into a single html to save a few roundtrips to
+# the server.
 
 script="$(base64 -w 0 script.js)"
 style="$(base64 -w 0 style.css)"
