@@ -23,12 +23,12 @@ function handleButtonsAndClock(header) {
 
 function render(map) {
     if (map == null) {
-        map = globalState['map'];
+        map = globalState.map;
     } else {
-        globalState['map'] = map;
+        globalState.map = map;
     }
 
-    const bankStr = globalState['bank'];
+    const bankStr = globalState.bank;
 
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
@@ -90,9 +90,9 @@ function loadSprites(bank) {
     const bankStr = ('0' + bank.toString());
     let = bankStr.substr(bankStr.length - 2);
 
-    globalState['bank'] = bankStr;
+    globalState.bank = bankStr;
 
-    if (bankStr in globalState['images'])
+    if (bankStr in globalState.images)
         return;
 
     globalState.images[bankStr] = [];
@@ -222,12 +222,12 @@ function init() {
         console.log('Connection closed...');
         setConnectionStatusMsg('Not connected');
         reloadConnectionButtonText();
-        globalState['map'] = null;
+        globalState.map = null;
         render(null);
         setTimeout(reconnect, 200);
     };
 
-    globalState['socket'] = socket;
+    globalState.socket = socket;
 
     setConnectionStatusMsg('Connecting...');
     reloadConnectionButtonText();
@@ -236,7 +236,7 @@ function init() {
 function buttonPress(id) {
     if (isConnectionClosed()) return;
 
-    const socket = globalState['socket'];
+    const socket = globalState.socket;
     const payload = new ArrayBuffer(1);
     const view = new Uint8Array(payload);
 
@@ -254,12 +254,12 @@ function buttonPress(id) {
 }
 
 function isConnectionClosed() {
-  const socket = globalState['socket'];
+  const socket = globalState.socket;
   return (socket === null || socket === undefined || socket.readyState === 3);
 }
 
 function closeConnection() {
-    const socket = globalState['socket'];
+    const socket = globalState.socket;
     socket.close();
 }
 
