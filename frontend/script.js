@@ -218,7 +218,7 @@ function init() {
         loadSprites(bank);
         render(map);
     };
-    socket.onclose = function(event) {
+    socket.onclose = function(_event) {
         console.log('Connection closed...');
         setConnectionStatusMsg('Not connected');
         reloadConnectionButtonText();
@@ -273,9 +273,6 @@ function reloadConnectionButtonText() {
 }
 
 function onConnectionButtonClick() {
-    const button = document.getElementById('connection_control');
-    const socket = globalState['socket'];
-
     globalState.connectionAttempts = 42;  // magic number
 
     if (isConnectionClosed()) {
