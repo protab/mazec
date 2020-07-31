@@ -10,20 +10,20 @@ let globalState = {
 function getTileCoords(i, header) {
     const x = (i % 34)*15 - (header.x_ofs - 15);
     const y = Math.floor(i / 34)*15 - (header.y_ofs - 15);
-    return [x,y]
+    return [x,y];
 }
 
 function handleButtonsAndClock(header) {
     document.getElementById('clock').style.visibility = (header.time_left == 1023) ? 'hidden' : 'visible';
 
-    document.getElementById('time_left').innerHTML = header.time_left.toString();;
+    document.getElementById('time_left').innerHTML = header.time_left.toString();
     document.getElementById('button_start').style.visibility = header.button_start ? 'visible' : 'hidden';
     document.getElementById('button_end').style.visibility = header.button_end ? 'visible' : 'hidden';
 }
 
 function render(map) {
     if (map == null) {
-        map = globalState['map']
+        map = globalState['map'];
     } else {
         globalState['map'] = map;
     }
@@ -37,7 +37,7 @@ function render(map) {
     const h = canvas.height = 495;
 
     context.fillStyle = 'black';
-    context.font = "30px monospace"
+    context.font = "30px monospace";
     context.strokeStyle = 'white';
     context.fillRect(0, 0, w, h);
 
@@ -47,7 +47,7 @@ function render(map) {
             'time_left': 1023,
             'button_end': false,
             'button_start': false
-        })
+        });
         return;
     }
 
@@ -57,7 +57,7 @@ function render(map) {
     for (let i in map.tiles) {
         const coords = getTileCoords(i, map.header);
         try {
-            context.drawImage(globalState.images[bankStr][map.tiles[i]], coords[0], coords[1])
+            context.drawImage(globalState.images[bankStr][map.tiles[i]], coords[0], coords[1]);
         } catch (e) {
             const missing = document.getElementById("missing");
             context.drawImage(missing, coords[0], coords[1]);
@@ -95,9 +95,9 @@ function loadSprites(bank) {
     if (bankStr in globalState['images'])
         return;
 
-    globalState.images[bankStr] = []
+    globalState.images[bankStr] = [];
     for (let i = 0; i <= 0x1f; i++) {
-        const img = new Image()
+        const img = new Image();
         let id = ('0' + i.toString());
         id = id.substr(id.length - 2);
         // img.src = 'http://protab./static/img/2017/' + bankStr + '/' + id + '.png';
@@ -108,7 +108,7 @@ function loadSprites(bank) {
             if (counter == 32) {
                 render(null);
             }
-        }
+        };
         globalState.images[bankStr][i] = img;
     }
 }
@@ -125,7 +125,7 @@ function init() {
 
     socket.onopen = function() {
         console.log('Connection opened...');
-        setConnectionStatusMsg('Connected...')
+        setConnectionStatusMsg('Connected...');
         globalState.connectionAttempts = 0;
         render(null);
     };
@@ -137,11 +137,11 @@ function init() {
         }
 
         if(DEBUG) {
-            console.log('Received data:')
+            console.log('Received data:');
             console.log(event.data);
         }
 
-        const data = new Uint8Array(event.data)
+        const data = new Uint8Array(event.data);
     
         // HEADER
         const header = {
@@ -150,7 +150,7 @@ function init() {
             button_start: (data[1] & 0x01) > 0,
             button_end: (data[1] & 0x02) > 0,
             time_left: data[2] + ((data[1] & 0xc0) >>> 6) * 256
-        }
+        };
         const bank = data[3];
 
         if(DEBUG) {
@@ -160,7 +160,7 @@ function init() {
 
         // TILES
 
-        let tiles = []
+        let tiles = [];
         let bi = 4;
 
         let t = 0;
@@ -180,7 +180,7 @@ function init() {
         }
 
         // FLOATING TILES
-        let floating_tiles = []
+        let floating_tiles = [];
         while (bi < data.length) {
             const x = data[bi+1] + 256 * ((data[bi] & 0x40) >>> 6);
             const y = data[bi+2] + 256 * ((data[bi] & 0x80) >>> 7);
@@ -200,7 +200,7 @@ function init() {
                 'y': y,
                 'rotation': rotation,
                 'sprite': sprite
-            })
+            });
         }
 
         if(DEBUG) {
@@ -229,14 +229,14 @@ function init() {
 
     globalState['socket'] = socket;
 
-    setConnectionStatusMsg('Connecting...')
+    setConnectionStatusMsg('Connecting...');
     reloadConnectionButtonText();
 }
 
 function buttonPress(id) {
     if (isConnectionClosed()) return;
 
-    const socket = globalState['socket']
+    const socket = globalState['socket'];
     const payload = new ArrayBuffer(1);
     const view = new Uint8Array(payload);
 
@@ -255,7 +255,7 @@ function buttonPress(id) {
 
 function isConnectionClosed() {
   const socket = globalState['socket'];
-  return (socket === null || socket === undefined || socket.readyState === 3)
+  return (socket === null || socket === undefined || socket.readyState === 3);
 }
 
 function closeConnection() {
@@ -266,9 +266,9 @@ function closeConnection() {
 function reloadConnectionButtonText() {
     const button = document.getElementById('connection_control');
     if (isConnectionClosed()) {
-        button.innerHTML = 'Connect'
+        button.innerHTML = 'Connect';
     } else {
-        button.innerHTML = 'Disconnect'
+        button.innerHTML = 'Disconnect';
     }
 }
 
