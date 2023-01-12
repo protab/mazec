@@ -1,6 +1,6 @@
-var DEBUG = false;
+const DEBUG = false;
 
-var globalState = {
+let globalState = {
     'connectionAttempts': 0,
     'images': {}
 };
@@ -8,36 +8,36 @@ var globalState = {
 /**************************** RENDERING ***************************************/
 
 function getTileCoords(i, header) {
-    var x = (i % 34)*15 - (header.x_ofs - 15);
-    var y = Math.floor(i / 34)*15 - (header.y_ofs - 15);
-    return [x,y]
+    const x = (i % 34)*15 - (header.x_ofs - 15);
+    const y = Math.floor(i / 34)*15 - (header.y_ofs - 15);
+    return [x,y];
 }
 
 function handleButtonsAndClock(header) {
     document.getElementById('clock').style.visibility = (header.time_left == 1023) ? 'hidden' : 'visible';
 
-    document.getElementById('time_left').innerHTML = header.time_left.toString();;
+    document.getElementById('time_left').innerHTML = header.time_left.toString();
     document.getElementById('button_start').style.visibility = header.button_start ? 'visible' : 'hidden';
     document.getElementById('button_end').style.visibility = header.button_end ? 'visible' : 'hidden';
 }
 
 function render(map) {
     if (map == null) {
-        map = globalState['map']
+        map = globalState.map;
     } else {
-        globalState['map'] = map;
+        globalState.map = map;
     }
 
-    var bankStr = globalState['bank'];
+    const bankStr = globalState.bank;
 
-    var canvas = document.getElementById('canvas');
-    var context = canvas.getContext('2d');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
 
-    var w = canvas.width = 495;
-    var h = canvas.height = 495;
+    const w = canvas.width = 495;
+    const h = canvas.height = 495;
 
     context.fillStyle = 'black';
-    context.font = "30px monospace"
+    context.font = "30px monospace";
     context.strokeStyle = 'white';
     context.fillRect(0, 0, w, h);
 
@@ -47,38 +47,38 @@ function render(map) {
             'time_left': 1023,
             'button_end': false,
             'button_start': false
-        })
+        });
         return;
     }
 
     handleButtonsAndClock(map.header);
 
     // draw tiles
-    for (var i in map.tiles) {
-        var coords = getTileCoords(i, map.header);
+    for (let i in map.tiles) {
+        const coords = getTileCoords(i, map.header);
         try {
-            context.drawImage(globalState.images[bankStr][map.tiles[i]], coords[0], coords[1])
+            context.drawImage(globalState.images[bankStr][map.tiles[i]], coords[0], coords[1]);
         } catch (e) {
-            var missing = document.getElementById("missing");
+            const missing = document.getElementById("missing");
             context.drawImage(missing, coords[0], coords[1]);
         }
     }
 
     // draw floating tiles
-    for (var i in map.floating_tiles) {
-        var x = map.floating_tiles[i].x + 7 - map.header.x_ofs;
-        var y = map.floating_tiles[i].y + 7 - map.header.y_ofs;
-        var image = globalState.images[bankStr][map.floating_tiles[i].sprite];
-        var width = image.width;
-        var height = image.height;
-        var angle = map.floating_tiles[i].rotation * Math.PI / 180;
+    for (const i in map.floating_tiles) {
+        const x = map.floating_tiles[i].x + 7 - map.header.x_ofs;
+        const y = map.floating_tiles[i].y + 7 - map.header.y_ofs;
+        const image = globalState.images[bankStr][map.floating_tiles[i].sprite];
+        const width = image.width;
+        const height = image.height;
+        const angle = map.floating_tiles[i].rotation * Math.PI / 180;
 
         context.translate(x, y);
         context.rotate(-angle);
         try {
             context.drawImage(image, -width / 2, -height / 2, width, height);
         } catch (e) {
-            var missing = document.getElementById("missing");
+            const missing = document.getElementById("missing");
             context.drawImage(missing, -width / 2, -height / 2, width, height);
         }
         context.rotate(angle);
@@ -87,28 +87,28 @@ function render(map) {
 }
 
 function loadSprites(bank) {
-    var bankStr = ('0' + bank.toString());
-    bankStr = bankStr.substr(bankStr.length - 2);
+    const bankStr = ('0' + bank.toString());
+    let = bankStr.substr(bankStr.length - 2);
 
-    globalState['bank'] = bankStr;
+    globalState.bank = bankStr;
 
-    if (bankStr in globalState['images'])
+    if (bankStr in globalState.images)
         return;
 
-    globalState.images[bankStr] = []
-    for (var i = 0; i <= 0x1f; i++) {
-        var img = new Image()
-        var id = ('0' + i.toString());
+    globalState.images[bankStr] = [];
+    for (let i = 0; i <= 0x1f; i++) {
+        const img = new Image();
+        let id = ('0' + i.toString());
         id = id.substr(id.length - 2);
         // img.src = 'http://protab./static/img/2017/' + bankStr + '/' + id + '.png';
         img.src = 'img/' + bankStr + '/' + id + '.png';
-        var counter = 0;
+        let counter = 0;
         img.onload = img.onerror = function() {
             counter++;
             if (counter == 32) {
                 render(null);
             }
-        }
+        };
         globalState.images[bankStr][i] = img;
     }
 }
@@ -120,12 +120,12 @@ function setConnectionStatusMsg(msg) {
 }
 
 function init() {
-    var socket = new WebSocket(url);
+    const socket = new WebSocket(url);
     socket.binaryType = "arraybuffer";
 
     socket.onopen = function() {
         console.log('Connection opened...');
-        setConnectionStatusMsg('Connected...')
+        setConnectionStatusMsg('Connected...');
         globalState.connectionAttempts = 0;
         render(null);
     };
@@ -137,21 +137,21 @@ function init() {
         }
 
         if(DEBUG) {
-            console.log('Received data:')
+            console.log('Received data:');
             console.log(event.data);
         }
 
-        var data = new Uint8Array(event.data)
+        const data = new Uint8Array(event.data);
     
         // HEADER
-        var header = {
+        const header = {
             y_ofs: (data[0] & 0xf0 >>> 4) + 15,
             x_ofs: (data[0] & 0x0f) + 15,
             button_start: (data[1] & 0x01) > 0,
             button_end: (data[1] & 0x02) > 0,
             time_left: data[2] + ((data[1] & 0xc0) >>> 6) * 256
-        }
-        var bank = data[3];
+        };
+        const bank = data[3];
 
         if(DEBUG) {
             console.log('Header:');
@@ -160,18 +160,18 @@ function init() {
 
         // TILES
 
-        var tiles = []
-        var bi = 4;
+        let tiles = [];
+        let bi = 4;
 
-        var t = 0;
-        var repeat = 1;
-        var sprite = 0;
+        let t = 0;
+        let repeat = 1;
+        let sprite = 0;
         while (tiles.length != 34*34) {
             t = data[bi++];
             repeat = ((t & 0x80) > 0) ? data[bi++] + 3 : 1;
             sprite = t & 0x1f;
 
-            for (var i = 0; i < repeat; i++) tiles.push(sprite);
+            for (let i = 0; i < repeat; i++) tiles.push(sprite);
         }
         
         if(DEBUG) {
@@ -180,12 +180,12 @@ function init() {
         }
 
         // FLOATING TILES
-        var floating_tiles = []
+        let floating_tiles = [];
         while (bi < data.length) {
-            var x = data[bi+1] + 256 * ((data[bi] & 0x40) >>> 6);
-            var y = data[bi+2] + 256 * ((data[bi] & 0x80) >>> 7);
-            var rot = (data[bi] & 0x20) > 0;
-            var rotation = 0;
+            const x = data[bi+1] + 256 * ((data[bi] & 0x40) >>> 6);
+            const y = data[bi+2] + 256 * ((data[bi] & 0x80) >>> 7);
+            const rot = (data[bi] & 0x20) > 0;
+            let rotation = 0;
             sprite = data[bi] & 0x1f;
 
             if (rot) {
@@ -200,7 +200,7 @@ function init() {
                 'y': y,
                 'rotation': rotation,
                 'sprite': sprite
-            })
+            });
         }
 
         if(DEBUG) {
@@ -209,7 +209,7 @@ function init() {
         }
         
         // finalising data bundle
-        var map = {
+        const map = {
             'tiles': tiles,
             'floating_tiles': floating_tiles,
             'header': header
@@ -218,26 +218,28 @@ function init() {
         loadSprites(bank);
         render(map);
     };
-    socket.onclose = function(event) {
+    socket.onclose = function(_event) {
         console.log('Connection closed...');
         setConnectionStatusMsg('Not connected');
         reloadConnectionButtonText();
-        globalState['map'] = null;
+        globalState.map = null;
         render(null);
         setTimeout(reconnect, 200);
     };
 
-    globalState['socket'] = socket;
+    globalState.socket = socket;
 
-    setConnectionStatusMsg('Connecting...')
+    setConnectionStatusMsg('Connecting...');
     reloadConnectionButtonText();
 }
 
 function buttonPress(id) {
     if (isConnectionClosed()) return;
-    var socket = globalState['socket']
-    var payload = new ArrayBuffer(1);
-    var view = new Uint8Array(payload);
+
+    const socket = globalState.socket;
+    const payload = new ArrayBuffer(1);
+    const view = new Uint8Array(payload);
+
     view[0] = id;
     socket.send(payload);
 
@@ -252,28 +254,25 @@ function buttonPress(id) {
 }
 
 function isConnectionClosed() {
-  var socket = globalState['socket'];
-  return (socket === null || socket === undefined || socket.readyState === 3)
+  const socket = globalState.socket;
+  return (socket === null || socket === undefined || socket.readyState === 3);
 }
 
 function closeConnection() {
-    var socket = globalState['socket'];
+    const socket = globalState.socket;
     socket.close();
 }
 
 function reloadConnectionButtonText() {
-    var button = document.getElementById('connection_control');
+    const button = document.getElementById('connection_control');
     if (isConnectionClosed()) {
-        button.innerHTML = 'Connect'
+        button.innerHTML = 'Connect';
     } else {
-        button.innerHTML = 'Disconnect'
+        button.innerHTML = 'Disconnect';
     }
 }
 
 function onConnectionButtonClick() {
-    var button = document.getElementById('connection_control');
-    var socket = globalState['socket'];
-
     globalState.connectionAttempts = 42;  // magic number
 
     if (isConnectionClosed()) {
