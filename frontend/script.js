@@ -87,8 +87,7 @@ function render(map) {
 }
 
 function loadSprites(bank) {
-    const bankStr = ('0' + bank.toString());
-    let = bankStr.substr(bankStr.length - 2);
+    let bankStr = bank.toString().padStart(2, '0');
 
     globalState.bank = bankStr;
 
@@ -98,8 +97,7 @@ function loadSprites(bank) {
     globalState.images[bankStr] = [];
     for (let i = 0; i <= 0x1f; i++) {
         const img = new Image();
-        let id = ('0' + i.toString());
-        id = id.substr(id.length - 2);
+        let id = i.toString().padStart(2, '0');
         // img.src = 'http://protab./static/img/2017/' + bankStr + '/' + id + '.png';
         img.src = 'img/' + bankStr + '/' + id + '.png';
         let counter = 0;
